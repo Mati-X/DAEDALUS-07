@@ -1,2 +1,18 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿ using SadConsole;                                                                                                                                                                                                            
+    using SadConsole.Configuration;                                                                                                                                                                                              
+                                                                                                                                                                                                                                 
+    Settings.WindowTitle = "DAEDALUS-07 // SYSTEM INFILTRATION";                                                                                                                                                                 
+                                                                                                                                                                                                                                 
+    Builder configuration = new Builder()                                                                                                                                                                                        
+        .SetScreenSize(100, 35)                                                                                                                                                                                                  
+        .OnStart(Startup)                                                                                                                                                                                                        
+        .IsStartingScreenFocused(true);                                                                                                                                                                                          
+                                                                                                                                                                                                                                 
+    Game.Create(configuration);                                                                                                                                                                                                  
+    Game.Instance.Run();                                                                                                                                                                                                         
+    Game.Instance.Dispose();                                                                                                                                                                                                     
+                                                                                                                                                                                                                                 
+    void Startup(object? sender, GameHost host)                                                                                                                                                                                  
+    {                                                                                                                                                                                                                            
+        // Tutaj przypiszemy nasz ekran główny do Game.Instance.Screen                                                                                                                                                           
+    }                               
