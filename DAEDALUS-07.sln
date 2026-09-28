@@ -1,8 +1,29 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# 
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{8A7C42A7-7723-4DE3-B58A-6223C66FE941}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DAEDALUS07.Core", "src\DAEDALUS07.Core\DAEDALUS07.Core.csproj", "{BAC8DA3D-61B9-4EDD-A121-0294C7533463}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DAEDALUS07.Client", "src\DAEDALUS07.Client\DAEDALUS07.Client.csproj", "{01ADC9BD-4613-46B3-A3CD-6B77FBEDA163}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BAC8DA3D-61B9-4EDD-A121-0294C7533463}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BAC8DA3D-61B9-4EDD-A121-0294C7533463}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BAC8DA3D-61B9-4EDD-A121-0294C7533463}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BAC8DA3D-61B9-4EDD-A121-0294C7533463}.Release|Any CPU.Build.0 = Release|Any CPU
+		{01ADC9BD-4613-46B3-A3CD-6B77FBEDA163}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01ADC9BD-4613-46B3-A3CD-6B77FBEDA163}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01ADC9BD-4613-46B3-A3CD-6B77FBEDA163}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01ADC9BD-4613-46B3-A3CD-6B77FBEDA163}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{BAC8DA3D-61B9-4EDD-A121-0294C7533463} = {8A7C42A7-7723-4DE3-B58A-6223C66FE941}
+		{01ADC9BD-4613-46B3-A3CD-6B77FBEDA163} = {8A7C42A7-7723-4DE3-B58A-6223C66FE941}
 	EndGlobalSection
 EndGlobal
