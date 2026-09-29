@@ -16,24 +16,21 @@ public class SubnetRenderer : ScreenSurface
 
     public void Render()
     {
-        char glyph;
+        char glyph = ' ';
         Color foreground = Color.White;
         for (int x = 0; x < _grid.Width; x++)
         {
             for (int y = 0; y < _grid.Height; y++)
             {
                 var node = _grid[x, y];
-                if (!node.IsDiscovered)
-                {
-                    glyph = ' ';
-                }
-                else
+                if (node.IsDiscovered)
                 {
                     glyph = node.Type switch
                     {
+                        SubnetNodeType.Void => ' ',
                         SubnetNodeType.Floor => '.',
                         SubnetNodeType.Wall => '#',
-                        _ => '?'
+                        _ => ' '
                     };
                     foreground = node.Type switch
                     {
@@ -42,8 +39,12 @@ public class SubnetRenderer : ScreenSurface
                         _ => Color.White
                     };
                 }
-                Surface.SetGlyph(x, y, glyph, foreground, Color.Black);
+                else
+                {x
+                }
+                Surface.SetGlyph(x, y, glyph, foreground, Color.Black);                                                                                                                                                                                                                                                                             
             }
+            
         }
         IsDirty = true;
     }

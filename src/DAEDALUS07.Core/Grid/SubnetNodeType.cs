@@ -2,6 +2,7 @@
 
 public enum SubnetNodeType : byte
 {
+    Void,
     Wall,
     Floor,
     ServerTerminal,

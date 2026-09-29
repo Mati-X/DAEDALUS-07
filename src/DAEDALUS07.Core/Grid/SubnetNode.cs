@@ -8,7 +8,7 @@ public struct SubnetNode
     public bool IsSight;
     public SubnetNodeType Type;
 
-    public SubnetNode(bool isPassable, bool isTransparent, SubnetNodeType type = SubnetNodeType.Floor) : this()
+    public SubnetNode(bool isPassable, bool isTransparent, SubnetNodeType type = SubnetNodeType.Void) : this()
     {
         IsPassable = isPassable;
         IsTransparent = isTransparent;

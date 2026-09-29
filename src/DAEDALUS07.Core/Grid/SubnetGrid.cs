@@ -28,10 +28,10 @@ public sealed class SubnetGrid
         {
             for (int j = y; j < height+y; j++)
             {
-                this[i, j] = new(true, true)
+                this[i, j] = new(true, true, SubnetNodeType.Floor)
                 {
                     IsDiscovered = true,
-                    IsSight = true
+                    IsSight = true,
                 };
             }
         }

@@ -1,4 +1,6 @@
-﻿ using SadConsole;                                                                                                                                                                                                                            
+﻿ using DAEDALUS07.Client.Rendering;
+ using DAEDALUS07.Core.Grid;
+ using SadConsole;                                                                                                                                                                                                                            
     using SadConsole.Configuration;                                                                                                                                                                                                              
                                                                                                                                                                                                                                                  
     Settings.WindowTitle = "DAEDALUS-07 // SYSTEM INFILTRATION";                                                                                                                                                                                 
@@ -12,8 +14,9 @@
     Game.Instance.Dispose();                                                                                                                                                                                                                     
                                                                                                                                                                                                                                                  
     void Startup(object? sender, GameHost host)                                                                                                                                                                                                  
-    {                                                                                                                                                                                                                                            
-        ScreenSurface screen = new(100, 35);                                                                                                                                                                                                     
-        screen.Print(2, 2, "DAEDALUS-07 ONLINE. AWAITING INFILTRATION...");                                                                                                                                                                      
-        Game.Instance.Screen = screen;                                                                                                                                                                                                           
+    {                                                                                                                                                                                                                                                        
+        SubnetGrid grid = new(10, 10);                                                                                                                                                                                                           
+        grid.CreateRoom(5,5,5,5);
+        SubnetRenderer renderer = new(grid);                                                                                                                                                                                                  
+        Game.Instance.Screen = renderer;                                                                                                                                                                                                           
     }   
