@@ -16,9 +16,10 @@
                                                                                                                                                                                                                                                  
     void Startup(object? sender, GameHost host)                                                                                                                                                                                                  
     {                                                                                                                                                                                                                                                        
-        SubnetGrid grid = new(10, 10);   
-        Entity player = new(6, 6, "THESEUS");       
-        grid.CreateRoom(5,5,5,5);
+        SubnetGrid grid = new(80, 25);                                                                                                                                                                                               
+        grid.CreateRoom(40, 15, 5, 5);                                                                                                                                              
+        grid[15, 10] = new SubnetNode(false, false, SubnetNodeType.Wall);           
+        Entity player = new(6, 6, "THESEUS");  
         SubnetRenderer renderer = new(grid, player);                                                                                                                                                                                                  
         Game.Instance.Screen = renderer;                                                                                                                                                                                                           
     }   

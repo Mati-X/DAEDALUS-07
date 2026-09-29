@@ -39,57 +39,58 @@ public class ShadowcastFov
 
         for (int octant = 0; octant < 8; octant++)
         {
-            ScanOctant(octant, new[] { originX, originY }, row:1, startSlope:1.0, endSlope:0.0, radius, grid);
+            ScanOctant(octant, new[] { originX, originY }, row:1, startSlope:0.0, endSlope:1.0, radius, grid);
         }
     }
 
     private void ScanOctant(int octant, int[] origin, int row, double startSlope, double endSlope, int radius, SubnetGrid grid)
     {
-        if (row > radius || startSlope < endSlope)
+        if (row > radius || startSlope >= endSlope)
             return;
 
         bool previousBlocked = false;
+        double currentStartSlope = startSlope;
 
         for (int col = 0; col <= row; col++)
         {
-            double leftSlope = (col - 0.5) / (row + 0.5);
-            double rightSlope = (col + 0.5) / (row - 0.5);
+            double cellMinSlope = (col - 0.5) / row;
+            double cellMaxSlope = (col + 0.5) / row;
 
-            if (rightSlope > startSlope)
-            {
-                continue;
-            }
+            if (cellMaxSlope <= currentStartSlope) continue;                                                                                                                                                                             
+            if (cellMinSlope >= endSlope) break;  
 
-            if (leftSlope < endSlope)
-            {
-                break;
-            }
-            
-            var (x, y) = TransformOctant(octant,origin[0], origin[1], row, col);
-            
+
+            var (x, y) = TransformOctant(octant, origin[0], origin[1], row, col);
+
             if (grid.IsInBounds(x, y) && col * col + row * row <= radius * radius)
             {
-                grid[x,y].IsSight = true;
-                grid[x,y].IsDiscovered = true;
+                grid[x, y].IsSight = true;
+                grid[x, y].IsDiscovered = true;
             }
 
             bool isBlocked = !grid.IsInBounds(x, y) || !grid[x, y].IsTransparent;
 
-            if (isBlocked && !previousBlocked)
+            if (isBlocked)
             {
-                ScanOctant(octant, origin, row + 1, startSlope, leftSlope, radius, grid);
-                previousBlocked = true;
+                if (!previousBlocked)
+                {
+                    ScanOctant(octant, origin, row + 1, currentStartSlope, cellMinSlope, radius, grid);
+                    previousBlocked = true;
+                }
             }
             else
             {
-                if (previousBlocked) startSlope = rightSlope;
-                previousBlocked = false;
+                if (previousBlocked)
+                {
+                    currentStartSlope = cellMaxSlope;
+                    previousBlocked = false;
+                }
             }
         }
-        
+
         if (!previousBlocked)
         {
-            ScanOctant(octant, origin, row + 1, startSlope, endSlope, radius, grid);
+            ScanOctant(octant, origin, row + 1, currentStartSlope, endSlope, radius, grid);
         }
     }
 }

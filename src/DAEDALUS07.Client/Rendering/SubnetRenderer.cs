@@ -1,4 +1,5 @@
 ﻿using DAEDALUS07.Core.Entities;
+using DAEDALUS07.Core.Fov;
 using SadConsole;
 using DAEDALUS07.Core.Grid;
 using SadRogue.Primitives;
@@ -8,6 +9,7 @@ namespace DAEDALUS07.Client.Rendering;
 public class SubnetRenderer : ScreenSurface
 {
     private readonly SubnetGrid _grid;
+    private readonly ShadowcastFov _fov = new();
     private Entity _player;
         
 
@@ -18,6 +20,7 @@ public class SubnetRenderer : ScreenSurface
         UseKeyboard = true;
         IsFocused = true;
         _player = player;
+        _fov.Compute(grid, player.x, player.y, 8);
         Render();
     }
 
@@ -35,6 +38,7 @@ public class SubnetRenderer : ScreenSurface
         {
             if (_player.TryMove(dx, dy, _grid))
             {
+                _fov.Compute(_grid, _player.x, _player.y, 8);
                 Render();
                 return true;
             }
@@ -66,7 +70,7 @@ public class SubnetRenderer : ScreenSurface
                     };
                     foreground = node.Type switch
                     {
-                        SubnetNodeType.Floor => node.IsSight ? Color.White : Color.LightGray,
+                        SubnetNodeType.Floor => node.IsSight ? Color.White : Color.DarkGray,
                         SubnetNodeType.Wall => node.IsSight ? Color.Red : Color.DarkRed,
                         _ => Color.White
                     };
