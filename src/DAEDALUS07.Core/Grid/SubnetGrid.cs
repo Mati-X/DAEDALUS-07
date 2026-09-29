@@ -19,4 +19,21 @@ public sealed class SubnetGrid
     public int GetIndex(int x, int y) => y * Width + x;
     
     public bool IsInBounds(int x, int y) => x >= 0 && (uint)x < Width && y >= 0 && (uint)y < Height;
+
+    public void CreateRoom(int width, int height, int x, int y)
+    {
+        if (width <= 0 || height <= 0) return;
+        if (!IsInBounds(x+width-1, y+height-1) || !IsInBounds(x, y)) return;
+        for (int i = x; i < width+x; i++)
+        {
+            for (int j = y; j < height+y; j++)
+            {
+                this[i, j] = new(true, true)
+                {
+                    IsDiscovered = true,
+                    IsSight = true
+                };
+            }
+        }
+    }
 }
