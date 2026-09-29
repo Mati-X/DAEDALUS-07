@@ -1,4 +1,5 @@
 ﻿ using DAEDALUS07.Client.Rendering;
+ using DAEDALUS07.Core.Entities;
  using DAEDALUS07.Core.Grid;
  using SadConsole;                                                                                                                                                                                                                            
     using SadConsole.Configuration;                                                                                                                                                                                                              
@@ -15,8 +16,9 @@
                                                                                                                                                                                                                                                  
     void Startup(object? sender, GameHost host)                                                                                                                                                                                                  
     {                                                                                                                                                                                                                                                        
-        SubnetGrid grid = new(10, 10);                                                                                                                                                                                                           
+        SubnetGrid grid = new(10, 10);   
+        Entity player = new(6, 6, "THESEUS");       
         grid.CreateRoom(5,5,5,5);
-        SubnetRenderer renderer = new(grid);                                                                                                                                                                                                  
+        SubnetRenderer renderer = new(grid, player);                                                                                                                                                                                                  
         Game.Instance.Screen = renderer;                                                                                                                                                                                                           
     }   
