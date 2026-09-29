@@ -6,12 +6,14 @@ public struct SubnetNode
     public bool IsTransparent;
     public bool IsDiscovered;
     public bool IsSight;
+    public SubnetNodeType Type;
 
-    public SubnetNode(bool isPassable, bool isTransparent)
+    public SubnetNode(bool isPassable, bool isTransparent, SubnetNodeType type = SubnetNodeType.Floor) : this()
     {
         IsPassable = isPassable;
         IsTransparent = isTransparent;
         IsDiscovered = false;
         IsSight = false;
+        Type = type;
     }
 }
