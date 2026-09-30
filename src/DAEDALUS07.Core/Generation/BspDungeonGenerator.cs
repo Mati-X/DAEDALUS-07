@@ -60,4 +60,66 @@ public class BspDungeonGenerator
                 break;
         }
     }
+
+    private static Rect GetRoomFromSubtree(BspNode node, Random random)
+    {
+        if (node.IsLeaf) return node.Room!.Value;
+        if (random.Next(2) == 0) return GetRoomFromSubtree(node.Left!, random);
+        return GetRoomFromSubtree(node.Right!, random);
+    }
+
+    private static void ConnectNodes(SubnetGrid grid, BspNode node, Random random)
+    {
+        if (node.IsLeaf) return;
+        
+        ConnectNodes(grid, node.Left!, random);
+        ConnectNodes(grid, node.Right!, random);
+        
+        Rect leftRoom = GetRoomFromSubtree(node.Left!, random);
+        Rect rightRoom = GetRoomFromSubtree(node.Right!, random);
+        
+        (int,int) leftPoint = GetRandomPointInRoom(leftRoom, random);
+        (int,int) rightPoint = GetRandomPointInRoom(rightRoom, random);
+        
+        ConnectPoints(grid, leftPoint, rightPoint, random);
+    }
+
+    public static (List<Rect> rooms, (int x, int y) playerSpawn) Generate(SubnetGrid grid, int minSize, int maxSplits,
+        Random random)
+    {
+        BspNode root = new BspNode(new Rect(1, 1, grid.Width - 2, grid.Height - 2));
+        List<BspNode> nodes = [root];
+
+        for (int i = 0; i < maxSplits; i++)
+        {
+            foreach (var node in nodes.ToList())
+            {
+                if (node.IsLeaf && node.Split(minSize, random))
+                {
+                    nodes.Add(node.Left!);
+                    nodes.Add(node.Right!);
+                }
+            }
+        }
+        
+            List<Rect> rooms = [];   
+            
+            foreach (var leaf in nodes.Where(n => n.IsLeaf))
+            {
+                int roomW = random.Next(minSize - 2, leaf.Bounds.Width - 2);
+                int roomH = random.Next(minSize - 2, leaf.Bounds.Height - 2);
+                int roomX = random.Next(leaf.Bounds.X + 1, leaf.Bounds.Right - roomW);
+                int roomY = random.Next(leaf.Bounds.Y + 1, leaf.Bounds.Bottom - roomH);
+                
+                Rect room = new Rect(roomX, roomY, roomW, roomH);
+                leaf.Room = room;
+                rooms.Add(room);
+                
+                grid.CreateRoom(room.Width, room.Height, room.X, room.Y);
+            }
+
+            ConnectNodes(grid, root, random);
+            return (rooms, rooms[0].Center);
+    }
+    
 }
