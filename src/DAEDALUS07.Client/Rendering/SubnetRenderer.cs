@@ -13,15 +13,45 @@ public class SubnetRenderer : ScreenSurface
     private Entity _player;
         
 
-    public SubnetRenderer(SubnetGrid grid, Entity player) : base(grid.Width, grid.Height)
+    public SubnetRenderer(SubnetGrid grid, Entity player) : base(100,35, grid.Width, grid.Height)
     {
         _grid = grid;
         
         UseKeyboard = true;
+        UseMouse = true;
         IsFocused = true;
         _player = player;
         _fov.Compute(grid, player.x, player.y, 8);
         Render();
+    }
+
+    public override void Update(TimeSpan delta)
+    {
+        var pad = Microsoft.Xna.Framework.Input.GamePad.GetState(Microsoft.Xna.Framework.PlayerIndex.One);
+        
+        if(!pad.IsConnected) return;
+        
+        float stickX = pad.ThumbSticks.Right.X;
+        float stickY = -pad.ThumbSticks.Right.Y;
+
+        float deadzone = 0.2f;
+        
+        int offsetX = 0;                                                                                                                                                                                                                             
+        int offsetY = 0; 
+        
+        if (stickX * stickX + stickY * stickY >= deadzone * deadzone)                                                                                                                                                                                
+        {                                                                                                                                                                                                                                            
+            offsetX = (int)Math.Round(stickX * 8);                                                                                                                                                                                                   
+            offsetY = (int)Math.Round(stickY * 8);                                                                                                                                                                                                   
+        }     
+        
+        int targetX = _player.x + offsetX - (Surface.ViewWidth / 2);
+        int targetY = _player.y + offsetY - (Surface.ViewHeight / 2);
+    
+        Surface.ViewPosition = new Point(
+            Math.Clamp(targetX, 0, _grid.Width - Surface.ViewWidth),
+            Math.Clamp(targetY, 0, _grid.Height - Surface.ViewHeight)
+        );
     }
 
     public override bool ProcessKeyboard(SadConsole.Input.Keyboard keyboard)
