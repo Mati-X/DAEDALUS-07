@@ -70,7 +70,7 @@ public class SubnetRenderer : ScreenSurface
                     };
                     foreground = node.Type switch
                     {
-                        SubnetNodeType.Floor => node.IsSight ? Color.White : Color.DarkGray,
+                        SubnetNodeType.Floor => node.IsSight ? Color.White : Color.DarkSlateGray,
                         SubnetNodeType.Wall => node.IsSight ? Color.Red : Color.DarkRed,
                         _ => Color.White
                     };

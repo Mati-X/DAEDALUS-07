@@ -1,5 +1,6 @@
 ﻿ using DAEDALUS07.Client.Rendering;
  using DAEDALUS07.Core.Entities;
+ using DAEDALUS07.Core.Generation;
  using DAEDALUS07.Core.Grid;
  using SadConsole;                                                                                                                                                                                                                            
     using SadConsole.Configuration;                                                                                                                                                                                                              
@@ -16,10 +17,12 @@
                                                                                                                                                                                                                                                  
     void Startup(object? sender, GameHost host)                                                                                                                                                                                                  
     {                                                                                                                                                                                                                                                        
-        SubnetGrid grid = new(80, 25);                                                                                                                                                                                               
-        grid.CreateRoom(40, 15, 5, 5);                                                                                                                                              
-        grid[15, 10] = new SubnetNode(false, false, SubnetNodeType.Wall);           
-        Entity player = new(6, 6, "THESEUS");  
-        SubnetRenderer renderer = new(grid, player);                                                                                                                                                                                                  
-        Game.Instance.Screen = renderer;                                                                                                                                                                                                           
+         SubnetGrid grid = new(80, 25);                                                                                                                                                                                                               
+                                                                                                                                                                                                                                                
+    var (rooms, spawn) = BspDungeonGenerator.Generate(grid, minSize: 6, maxSplits: 4, new Random());                                                                                                                                             
+                                                                                                                                                                                                                                                
+    Entity player = new(spawn.x, spawn.y, "THESEUS");                                                                                                                                                                                            
+                                                                                                                                                                                                                                                 
+    SubnetRenderer renderer = new(grid, player);                                                                                                                                                                                                 
+    Game.Instance.Screen = renderer;                                                                                                                                                                                                              
     }   
