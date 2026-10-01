@@ -20,6 +20,10 @@ public class SubnetRenderer : ScreenSurface
     private const int LookAheadRadiusCells = 4;
     private const float LerpSpeed = 4f;
 
+    private float _currentMoveCooldown = 0f;
+    private float _moveCooldown = 0.18f;
+    private bool _isMoving = false;
+
     public SubnetRenderer(SubnetGrid grid, Entity player) : base(52,19, grid.Width, grid.Height)
     {
         _grid = grid;
@@ -36,11 +40,38 @@ public class SubnetRenderer : ScreenSurface
 
     public override void Update(TimeSpan delta)
     {
+        
+        
         GamePadState pad = Microsoft.Xna.Framework.Input.GamePad.GetState(Microsoft.Xna.Framework.PlayerIndex.One);
         Mouse mouse = SadConsole.GameHost.Instance.Mouse; 
         
         int offsetX = 0;                                                                                                                                                                                                                             
         int offsetY = 0;
+        
+        if (_currentMoveCooldown > 0)
+        {
+            _currentMoveCooldown -= (float)delta.TotalSeconds;
+        }
+
+        if (pad.IsConnected)
+        {
+            var (pdx, pdy) = GetPadMovement(pad);
+
+            if (pdx == 0 && pdy == 0)
+            {
+                _currentMoveCooldown = 0f;
+            }
+            else if (_currentMoveCooldown <= 0f)
+            {
+                if (_player.TryMove(pdx, pdy, _grid))
+                {
+                    _fov.Compute(_grid,_player.x, _player.y, 8);
+                    Render();
+                }
+
+                _currentMoveCooldown = _moveCooldown;
+            }
+        }
 
         if (pad.IsConnected)
         {
@@ -122,6 +153,42 @@ public class SubnetRenderer : ScreenSurface
         return ((int)mouseVecX, (int)mouseVecY);
     }
 
+    public (int dx, int dy) GetPadMovement(GamePadState pad)
+    {
+        int dx = 0;
+        int dy = 0;
+        
+        if (pad.DPad.Up == ButtonState.Pressed) dy--;
+        else if (pad.DPad.Down == ButtonState.Pressed) dy++;
+        else if (pad.DPad.Left == ButtonState.Pressed) dx--;
+        else if (pad.DPad.Right == ButtonState.Pressed) dx++;
+
+        if (dx != 0 || dy != 0 || pad.ThumbSticks.Left is { X: 0, Y: 0 } ) return (dx, dy);
+
+        switch (pad.ThumbSticks.Left.X)
+        {
+            case > 0.5f:
+                dx++;
+                break;
+            case < -0.5f:
+                dx--;
+                break;
+        }
+
+        switch (pad.ThumbSticks.Left.Y)
+        {
+            case < -0.5f:
+                dy++;
+                break;
+            case > 0.5f:
+                dy--;
+                break;
+        }
+
+        return (dx, dy);
+
+    }
+
     public override bool ProcessKeyboard(SadConsole.Input.Keyboard keyboard)
     {
         int dx = 0;
@@ -132,17 +199,12 @@ public class SubnetRenderer : ScreenSurface
         else if (keyboard.IsKeyPressed(SadConsole.Input.Keys.Left) || keyboard.IsKeyPressed(SadConsole.Input.Keys.A)) dx--;
         else if (keyboard.IsKeyPressed(SadConsole.Input.Keys.Right) || keyboard.IsKeyPressed(SadConsole.Input.Keys.D)) dx++;
 
-        if (dx != 0 || dy != 0)
-        {
-            if (_player.TryMove(dx, dy, _grid))
-            {
-                _fov.Compute(_grid, _player.x, _player.y, 8);
-                Render();
-                return true;
-            }
-        }
-        
-        return base.ProcessKeyboard(keyboard);
+        if (dx == 0 && dy == 0 || !_player.TryMove(dx, dy, _grid)) return base.ProcessKeyboard(keyboard);
+
+        _fov.Compute(_grid, _player.x, _player.y, 8);
+        Render();
+        return true;
+
     }
 
     public void Render()
