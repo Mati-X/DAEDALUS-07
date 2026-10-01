@@ -2,7 +2,9 @@
 using DAEDALUS07.Core.Fov;
 using SadConsole;
 using DAEDALUS07.Core.Grid;
+using Microsoft.Xna.Framework.Input;
 using SadRogue.Primitives;
+using Mouse = SadConsole.Input.Mouse;
 
 namespace DAEDALUS07.Client.Rendering;
 
@@ -12,14 +14,21 @@ public class SubnetRenderer : ScreenSurface
     private readonly ShadowcastFov _fov = new();
     private Entity _player;
         
+    private float _currentOffsetX;                                                                                                                                                                                          
+    private float _currentOffsetY;  
+    
+    private const int LookAheadRadiusCells = 4;
+    private const float LerpSpeed = 4f;
 
-    public SubnetRenderer(SubnetGrid grid, Entity player) : base(100,35, grid.Width, grid.Height)
+    public SubnetRenderer(SubnetGrid grid, Entity player) : base(52,19, grid.Width, grid.Height)
     {
         _grid = grid;
         
         UseKeyboard = true;
         UseMouse = true;
         IsFocused = true;
+        FontSize = Font.GetFontSize(SadConsole.IFont.Sizes.Two);
+        UsePixelPositioning = true;
         _player = player;
         _fov.Compute(grid, player.x, player.y, 8);
         Render();
@@ -27,31 +36,90 @@ public class SubnetRenderer : ScreenSurface
 
     public override void Update(TimeSpan delta)
     {
-        var pad = Microsoft.Xna.Framework.Input.GamePad.GetState(Microsoft.Xna.Framework.PlayerIndex.One);
+        GamePadState pad = Microsoft.Xna.Framework.Input.GamePad.GetState(Microsoft.Xna.Framework.PlayerIndex.One);
+        Mouse mouse = SadConsole.GameHost.Instance.Mouse; 
         
-        if(!pad.IsConnected) return;
+        int offsetX = 0;                                                                                                                                                                                                                             
+        int offsetY = 0;
+
+        if (pad.IsConnected)
+        {
+            (offsetX, offsetY) = GetPadOffset(pad);
+        }
+
+        if (offsetX == 0 && offsetY == 0 && mouse.IsOnScreen)                                                                                                                                                                        
+        {                                                                                                                                                                                                                            
+            (offsetX, offsetY) = GetMouseOffset(mouse);                                                                                                                                                                              
+        }
+
         
+        
+        _currentOffsetX += (offsetX - _currentOffsetX) * (float)Math.Min(1.0,LerpSpeed * delta.TotalSeconds);
+        _currentOffsetY += (offsetY - _currentOffsetY) * (float)Math.Min(1.0,LerpSpeed * delta.TotalSeconds);
+        
+        offsetX = (int)Math.Round(_currentOffsetX);                                                                                                                                                                          
+        offsetY = (int)Math.Round(_currentOffsetY); 
+        
+        
+        int maxPixelX = (_grid.Width - Surface.ViewWidth) * FontSize.X;                                                                                                                                                                              
+        int maxPixelY = (_grid.Height - Surface.ViewHeight) * FontSize.Y;                                                                                                                                                                            
+                      
+        int camPixelX = _player.x * FontSize.X + offsetX - (Surface.ViewWidth / 2 * FontSize.X);
+        int camPixelY = _player.y * FontSize.Y + offsetY - (Surface.ViewHeight / 2 * FontSize.Y);
+        
+        camPixelX = Math.Clamp(camPixelX, 0, maxPixelX);                                                                                                                                                                                             
+        camPixelY = Math.Clamp(camPixelY, 0, maxPixelY);                                                                                                                                                                                             
+                                                                                                                                                                                                                                                     
+        int cellX = camPixelX / FontSize.X;                                                                                                                                                                                                          
+        int subPixelX = camPixelX % FontSize.X; 
+        
+        int cellY = camPixelY / FontSize.Y;
+        int subPixelY = camPixelY % FontSize.Y;
+        
+        Surface.ViewPosition = new Point(cellX,cellY);
+        
+        Position = new Point(-subPixelX, -subPixelY); 
+         
+    }
+
+    private (int x, int y) GetPadOffset(GamePadState pad)
+    {
         float stickX = pad.ThumbSticks.Right.X;
         float stickY = -pad.ThumbSticks.Right.Y;
 
+        int offsetX = 0;
+        int offsetY = 0;
+
         float deadzone = 0.2f;
-        
-        int offsetX = 0;                                                                                                                                                                                                                             
-        int offsetY = 0; 
         
         if (stickX * stickX + stickY * stickY >= deadzone * deadzone)                                                                                                                                                                                
         {                                                                                                                                                                                                                                            
-            offsetX = (int)Math.Round(stickX * 8);                                                                                                                                                                                                   
-            offsetY = (int)Math.Round(stickY * 8);                                                                                                                                                                                                   
-        }     
+            offsetX = (int)Math.Round(stickX * LookAheadRadiusCells * FontSize.X);                                                                                                                                                                                                   
+            offsetY = (int)Math.Round(stickY * LookAheadRadiusCells * FontSize.Y);                                                                                                                                                                                                   
+        }
+
+        return (offsetX, offsetY);
+    }
+
+    private (int x, int y) GetMouseOffset(Mouse mouse)
+    {
+        int centerX = (Surface.ViewWidth * FontSize.X) / 2 ;
+        int centerY = (Surface.ViewHeight * FontSize.Y) / 2;
         
-        int targetX = _player.x + offsetX - (Surface.ViewWidth / 2);
-        int targetY = _player.y + offsetY - (Surface.ViewHeight / 2);
-    
-        Surface.ViewPosition = new Point(
-            Math.Clamp(targetX, 0, _grid.Width - Surface.ViewWidth),
-            Math.Clamp(targetY, 0, _grid.Height - Surface.ViewHeight)
-        );
+        double mouseVecX = mouse.ScreenPosition.X - centerX;
+        double mouseVecY = mouse.ScreenPosition.Y - centerY;
+
+        int maxRadius = LookAheadRadiusCells * FontSize.X;
+
+        double dist = Math.Sqrt(mouseVecX * mouseVecX + mouseVecY * mouseVecY);
+
+        if (dist > maxRadius)
+        {
+            mouseVecX *= (maxRadius / dist);
+            mouseVecY *= (maxRadius / dist);
+        }
+
+        return ((int)mouseVecX, (int)mouseVecY);
     }
 
     public override bool ProcessKeyboard(SadConsole.Input.Keyboard keyboard)

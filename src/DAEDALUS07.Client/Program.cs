@@ -15,11 +15,12 @@
     Game.Instance.Run();                                                                                                                                                                                                                         
     Game.Instance.Dispose();                                                                                                                                                                                                                     
                                                                                                                                                                                                                                                  
-    void Startup(object? sender, GameHost host)                                                                                                                                                                                                  
-    {                                                                                                                                                                                                                                                        
-         SubnetGrid grid = new(140, 90);                                                                                                                                                                                                               
+    void Startup(object? sender, GameHost host)
+    {
+         int padding = 100;
+         SubnetGrid grid = new(140 + padding*2, 90 + padding*2);                                                                                                                                                                                                               
                                                                                                                                                                                                                                                 
-    var (rooms, spawn) = BspDungeonGenerator.Generate(grid, minSize: 10, maxSplits: 5, new Random());                                                                                                                                             
+    var (rooms, spawn) = BspDungeonGenerator.Generate(grid, minSize: 16, maxSplits: 4, new Random(), padding);                                                                                                                                             
                                                                                                                                                                                                                                                 
     Entity player = new(spawn.x, spawn.y, "THESEUS");                                                                                                                                                                                            
                                                                                                                                                                                                                                                  

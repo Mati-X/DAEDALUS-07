@@ -85,9 +85,9 @@ public class BspDungeonGenerator
     }
 
     public static (List<Rect> rooms, (int x, int y) playerSpawn) Generate(SubnetGrid grid, int minSize, int maxSplits,
-        Random random)
+        Random random, int padding)
     {
-        BspNode root = new BspNode(new Rect(1, 1, grid.Width - 2, grid.Height - 2));
+        BspNode root = new BspNode(new Rect(padding, padding, grid.Width - 2 * padding, grid.Height - 2 * padding));
         List<BspNode> nodes = [root];
 
         for (int i = 0; i < maxSplits; i++)
