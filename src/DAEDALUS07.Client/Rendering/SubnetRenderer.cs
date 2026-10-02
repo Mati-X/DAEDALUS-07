@@ -19,21 +19,31 @@ public class SubnetRenderer : ScreenSurface
     
     private const int LookAheadRadiusCells = 4;
     private const float LerpSpeed = 4f;
-
+    
+    private float _cameraX;                                                                                                                                                                                                      
+    private float _cameraY;                                                                                                                                                                                                      
+    private const float CameraSpeed = 2f;
+    
     private float _currentMoveCooldown = 0f;
     private float _moveCooldown = 0.18f;
     private bool _isMoving = false;
 
-    public SubnetRenderer(SubnetGrid grid, Entity player) : base(52,19, grid.Width, grid.Height)
+    public SubnetRenderer(SubnetGrid grid, Entity player) : base(58,37, grid.Width, grid.Height)
     {
         _grid = grid;
         
         UseKeyboard = true;
         UseMouse = true;
         IsFocused = true;
-        FontSize = Font.GetFontSize(SadConsole.IFont.Sizes.Two);
         UsePixelPositioning = true;
         _player = player;
+        
+        int maxPixelX = (_grid.Width - Surface.ViewWidth) * FontSize.X;                                                                                                                                                              
+        int maxPixelY = (_grid.Height - Surface.ViewHeight) * FontSize.Y;                                                                                                                                                            
+                                                                                                                                                                                                                                 
+        _cameraX = Math.Clamp(player.x * FontSize.X - (Surface.ViewWidth / 2f * FontSize.X), 0, maxPixelX);                                                                                                                          
+        _cameraY = Math.Clamp(player.y * FontSize.Y - (Surface.ViewHeight / 2f * FontSize.Y), 0, maxPixelY);        
+        
         _fov.Compute(grid, player.x, player.y, 8);
         Render();
     }
@@ -91,15 +101,19 @@ public class SubnetRenderer : ScreenSurface
         offsetX = (int)Math.Round(_currentOffsetX);                                                                                                                                                                          
         offsetY = (int)Math.Round(_currentOffsetY); 
         
-        
         int maxPixelX = (_grid.Width - Surface.ViewWidth) * FontSize.X;                                                                                                                                                                              
-        int maxPixelY = (_grid.Height - Surface.ViewHeight) * FontSize.Y;                                                                                                                                                                            
-                      
-        int camPixelX = _player.x * FontSize.X + offsetX - (Surface.ViewWidth / 2 * FontSize.X);
-        int camPixelY = _player.y * FontSize.Y + offsetY - (Surface.ViewHeight / 2 * FontSize.Y);
+        int maxPixelY = (_grid.Height - Surface.ViewHeight) * FontSize.Y; 
         
-        camPixelX = Math.Clamp(camPixelX, 0, maxPixelX);                                                                                                                                                                                             
-        camPixelY = Math.Clamp(camPixelY, 0, maxPixelY);                                                                                                                                                                                             
+        float targetCamX = _player.x * FontSize.X + offsetX - (Surface.ViewWidth / 2f * FontSize.X);                                                                                                                                 
+        float targetCamY = _player.y * FontSize.Y + offsetY - (Surface.ViewHeight / 2f * FontSize.Y);                                                                                                                                
+        targetCamX = Math.Clamp(targetCamX, 0, maxPixelX);                                                                                                                                                                           
+        targetCamY = Math.Clamp(targetCamY, 0, maxPixelY);        
+        
+        _cameraX += (targetCamX - _cameraX) * (float)Math.Min(1.0, CameraSpeed * delta.TotalSeconds);                                                                                                                                
+        _cameraY += (targetCamY - _cameraY) * (float)Math.Min(1.0, CameraSpeed * delta.TotalSeconds);     
+        
+        int camPixelX = (int)Math.Round(_cameraX);                                                                                                                                                                                   
+        int camPixelY = (int)Math.Round(_cameraY); 
                                                                                                                                                                                                                                                      
         int cellX = camPixelX / FontSize.X;                                                                                                                                                                                                          
         int subPixelX = camPixelX % FontSize.X; 

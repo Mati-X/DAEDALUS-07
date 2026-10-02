@@ -12,6 +12,7 @@ public sealed class SubnetGrid
         Width = width;
         Height = height;
         _nodes = new SubnetNode[width * height];
+        Array.Fill(_nodes, new SubnetNode(false,false,SubnetNodeType.Wall));
     }
     
     public ref SubnetNode this[int x, int y] => ref _nodes[GetIndex(x, y)];
