@@ -10,17 +10,28 @@ public class Entity
     public char Glyph { get; set; } 
     public int MaxIntegrity { get; set; } 
     public int Integrity { get; set; }
+    public int Size { get; set; } = 1;
     public bool IsAlive => Integrity > 0;
 
     public bool TryMove(int dx, int dy, SubnetGrid grid)
     {
         int targetX = x + dx;
         int targetY = y + dy;
-        if (!grid.IsInBounds(targetX, targetY) || !grid[targetX, targetY].IsPassable) return false;
-        this.x = targetX;
-        this.y = targetY;
+
+        for (int cx = 0; cx < Size; cx++)
+        {
+            for (int cy = 0; cy < Size; cy++)
+            {
+                int checkX = targetX + cx;
+                int checkY = targetY + cy;
+                if (!grid.IsInBounds(checkX, checkY) || !grid[checkX, checkY].IsPassable)
+                    return false;
+            }
+        }
+
+        x = targetX;
+        y = targetY;
         return true;
-            
     }
     
     public Entity(int x, int y, string name, char glyph = '@', int maxIntegrity = 100) 

@@ -14,6 +14,7 @@ public class SubnetRenderer : ScreenSurface
     private readonly ShadowcastFov _fov = new();
     private Entity _player;
     private readonly List<Entity> _enemies;
+    private readonly ScreenSurface _playerSurface;
         
     private float _currentOffsetX;                                                                                                                                                                                          
     private float _currentOffsetY;  
@@ -24,16 +25,16 @@ public class SubnetRenderer : ScreenSurface
     
     private float _cameraX;                                                                                                                                                                                                      
     private float _cameraY;                                                                                                                                                                                                      
-    private const float CameraSpeed = 2f;
+    private const float CameraSpeed = 4f;
     
     private float _currentMoveCooldown = 0f;
-    private float _moveCooldown = 0.02f;
+    private float _moveCooldown = 0.10f;
     private bool _isMoving = false;
     
     private double _fpsTimer = 0;
     private int _frameCount = 0;
 
-    public SubnetRenderer(SubnetGrid grid, Entity player, List<Entity> enemies) : base(116,74, grid.Width, grid.Height)
+    public SubnetRenderer(SubnetGrid grid, Entity player, List<Entity> enemies, IFont font16x16) : base(116,74, grid.Width, grid.Height)
     {
         _grid = grid;
         
@@ -49,7 +50,15 @@ public class SubnetRenderer : ScreenSurface
         int maxPixelY = (_grid.Height - Surface.ViewHeight) * FontSize.Y;                                                                                                                                                            
                                                                                                                                                                                                                                  
         _cameraX = Math.Clamp(player.x * FontSize.X - (Surface.ViewWidth / 2f * FontSize.X), 0, maxPixelX);                                                                                                                          
-        _cameraY = Math.Clamp(player.y * FontSize.Y - (Surface.ViewHeight / 2f * FontSize.Y), 0, maxPixelY);        
+        _cameraY = Math.Clamp(player.y * FontSize.Y - (Surface.ViewHeight / 2f * FontSize.Y), 0, maxPixelY);       
+        
+        _playerSurface = new ScreenSurface(1, 1)
+        {
+            Font = font16x16,
+            UsePixelPositioning = true
+        };
+        _playerSurface.Surface.SetGlyph(0, 0, '@', Theme.Current.Player, Color.Transparent);
+        Children.Add(_playerSurface);
         
         _fov.Compute(grid, player.x, player.y, FovRadius);
         Render();
@@ -90,11 +99,11 @@ public class SubnetRenderer : ScreenSurface
                                                                                                                                                                                                                                    
         if ((moveX != 0 || moveY != 0) && _currentMoveCooldown <= 0f)                                                                                                                                                                
         {                                                                                                                                                                                                                            
-            if (_player.TryMove(moveX, moveY, _grid))                                                                                                                                                                                
-            {                                                                                                                                                                                                                        
-                _fov.Compute(_grid, _player.x, _player.y, FovRadius);                                                                                                                                                                        
-                Render();                                                                                                                                                                                                            
-            }                                                                                                                                                                                                                        
+            if (_player.TryMove(moveX * _player.Size, moveY * _player.Size, _grid))
+            {
+                _fov.Compute(_grid, _player.x, _player.y, FovRadius);
+                Render();
+            }                                                                                                                                                                                                                 
                                                                                                                                                                                                                                      
             _currentMoveCooldown = _moveCooldown;                                                                                                                                                                                    
         }       
@@ -138,6 +147,10 @@ public class SubnetRenderer : ScreenSurface
         int subPixelY = camPixelY % FontSize.Y;
         
         Surface.ViewPosition = new Point(cellX,cellY);
+        
+        int px = (_player.x - cellX) * FontSize.X;
+        int py = (_player.y - cellY) * FontSize.Y;
+        _playerSurface.Position = new Point(px, py);
         
         Position = new Point(-subPixelX, -subPixelY); 
          
@@ -240,11 +253,12 @@ public class SubnetRenderer : ScreenSurface
 
     private bool IsRoofAt(int x, int y)
     {
-        if (!_grid.IsInBounds(x, y + 2)) return false;
+        if (!_grid.IsInBounds(x, y + 3)) return false;
 
         return _grid[x, y].Type == SubnetNodeType.Wall &&
                _grid[x, y + 1].Type == SubnetNodeType.Wall &&
-               _grid[x, y + 2].Type == SubnetNodeType.Floor;
+               _grid[x, y + 2].Type == SubnetNodeType.Wall &&
+               _grid[x, y + 3].Type == SubnetNodeType.Floor;
     }
     
     private int GetGlyph(SubnetNode node, bool isFrontWall, bool isRoof)
@@ -253,25 +267,26 @@ public class SubnetRenderer : ScreenSurface
         {
             SubnetNodeType.Void => ' ',
             SubnetNodeType.Floor => '.',
-            SubnetNodeType.Wall => isRoof ? 220 : 219,
+            SubnetNodeType.Wall => 219,
             _ => ' '
         };
     }
     
-    private Color GetForeground(SubnetNode node, bool isFrontWall, bool isRoof, float intensity)
+    private Color GetForeground(SubnetNode node, bool isFrontWall, bool isRoof, float intensity,bool isLit)
     {
         if (node.Type == SubnetNodeType.Floor)
         {
-            if (!node.IsSight) return Color.DarkSlateGray;
-            return Color.Lerp(Color.DarkSlateGray, Color.White, intensity);
+            if (!node.IsSight) return Theme.Current.FloorFog;
+            return Color.Lerp(Theme.Current.FloorFog, Theme.Current.FloorLit, intensity);
         }
         if (node.Type == SubnetNodeType.Wall)
         {
-            Color bright = isFrontWall ? Color.Crimson : Color.Red;
-            Color dim = isFrontWall ? Color.DarkRed : Color.Maroon;
-            if (!node.IsSight) return dim;
+            Color bright = isFrontWall ? Theme.Current.WallFront : Theme.Current.WallRoof;
+            Color dim = Theme.Current.WallDim;
+            if (!isLit) return dim;
             return Color.Lerp(dim, bright, intensity);
         }
+
         return Color.White;
     }
 
@@ -294,14 +309,21 @@ public class SubnetRenderer : ScreenSurface
                 
                 var node = _grid[x, y];
                 
-                bool isFrontWall = node.Type == SubnetNodeType.Wall && 
-                                   _grid.IsInBounds(x, y + 1) && 
-                                   _grid[x, y + 1].Type == SubnetNodeType.Floor;
+                bool isLowerFacade = _grid.IsInBounds(x, y + 1) && 
+                                     _grid[x, y + 1].Type == SubnetNodeType.Floor;
+
+                bool isUpperFacade = _grid.IsInBounds(x, y + 2) && 
+                                     _grid[x, y + 1].Type == SubnetNodeType.Wall && 
+                                     _grid[x, y + 2].Type == SubnetNodeType.Floor;
+
+                bool isFrontWall = node.Type == SubnetNodeType.Wall && (isLowerFacade || isUpperFacade);
                 
                 bool hasSideWallAbove = _grid.IsInBounds(x, y - 1) && 
                                         _grid[x, y - 1].Type == SubnetNodeType.Wall &&
                                         ((_grid.IsInBounds(x - 1, y - 1) && _grid[x - 1, y - 1].Type == SubnetNodeType.Floor) ||
                                          (_grid.IsInBounds(x + 1, y - 1) && _grid[x + 1, y - 1].Type == SubnetNodeType.Floor));
+                
+                
                 
                 bool isRoof = !hasSideWallAbove && node.Type == SubnetNodeType.Wall && !isFrontWall && (
                     IsRoofAt(x, y) || 
@@ -309,7 +331,18 @@ public class SubnetRenderer : ScreenSurface
                     (_grid.IsInBounds(x + 1, y) && IsRoofAt(x + 1, y))
                 );
                 
-                bool isDiscovered = node.IsDiscovered;
+                bool isSideWallAbove = node.Type == SubnetNodeType.Wall && !isFrontWall && !isRoof &&
+                                       _grid.IsInBounds(x, y + 1) && _grid[x, y + 1].IsSight;
+                
+                
+                bool isLit = node.IsSight || 
+                             (isUpperFacade && _grid.IsInBounds(x, y + 1) && _grid[x, y + 1].IsSight) ||
+                             (isRoof && _grid.IsInBounds(x, y + 2) && _grid[x, y + 2].IsSight) ||
+                             isSideWallAbove;
+                
+                bool isDiscovered = node.IsDiscovered || isLit ||
+                                    (isUpperFacade && _grid.IsInBounds(x, y + 1) && _grid[x, y + 1].IsDiscovered) ||
+                                    (isRoof && _grid.IsInBounds(x, y + 2) && _grid[x, y + 2].IsDiscovered);
 
                 if (!isDiscovered && _grid.IsInBounds(x, y + 1))
                 {
@@ -323,7 +356,7 @@ public class SubnetRenderer : ScreenSurface
                 }
                 
                 float intensity = 0f;
-                if (node.IsSight)
+                if (isLit)
                 {
                     float dx = x - _player.x;
                     float dy = y - _player.y;
@@ -335,7 +368,7 @@ public class SubnetRenderer : ScreenSurface
                 if (isDiscovered)
                 {
                     glyph = GetGlyph(node, isFrontWall, isRoof);
-                    foreground = GetForeground(node, isFrontWall, isRoof,intensity);
+                    foreground = GetForeground(node, isFrontWall, isRoof,intensity,isLit);
                 }
                 Surface.SetGlyph(x, y, glyph, foreground, Color.Black); 
             }
@@ -346,10 +379,9 @@ public class SubnetRenderer : ScreenSurface
         {
             if(!enemy.IsAlive) continue;
             if(!_grid[enemy.x,enemy.y].IsSight) continue;
-            Surface.SetGlyph(enemy.x, enemy.y, enemy.Glyph, Color.Red, Color.Black); 
+            Surface.SetGlyph(enemy.x, enemy.y, enemy.Glyph, Theme.Current.Enemy, Color.Black);
         }
         
-        Surface.SetGlyph(_player.x , _player.y, '@', Color.Yellow, Color.Black);
         IsDirty = true;
     }
 }

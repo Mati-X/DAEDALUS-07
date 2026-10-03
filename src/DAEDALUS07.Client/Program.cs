@@ -16,23 +16,27 @@
                                                                                                                                                                                                                                                  
     Game.Create(configuration);                                                                                                                                                                                                                  
     Game.Instance.Run();                                                                                                                                                                                                                         
-    Game.Instance.Dispose();                                                                                                                                                                                                                     
-                                                                                                                                                                                                                                                 
-     void Startup(object? sender, GameHost host)                                                                                                                                                                                  
-    {                                                                                                                                                                                                                            
-        var customFont = host.LoadFont("Fonts/IBM16x16.font"); 
+    Game.Instance.Dispose();
+
+    void Startup(object? sender, GameHost host)
+    {
+        var customFont = host.LoadFont("Fonts/IBM16x16.font");
         var font8x8 = host.LoadFont("Fonts/IBM8x8.font");
-        GameHost.Instance.DefaultFont = customFont;                                                                                                                                                                              
-                                                                                                                                                                                                                                 
-        int padding = 100;                                                                                                                                                                                                       
-        SubnetGrid grid = new(280 + padding * 2, 180 + padding * 2);                                                                                                                                                              
-        var (rooms, spawn,enemies) = BspDungeonGenerator.Generate(grid, minSize: 32, maxSplits: 4, new Random(), padding);                                                                                                               
-                                                                                                                                                                                                                                 
-        Entity player = new(spawn.x, spawn.y, "THESEUS");                                                                                                                                                                        
+        Theme.Load("Themes/default.json");
+        GameHost.Instance.DefaultFont = customFont;
+
+        int padding = 100;
+        SubnetGrid grid = new(280 + padding * 2, 180 + padding * 2);
+        var (rooms, spawn, enemies) = BspDungeonGenerator.Generate(grid, minSize: 32, maxSplits: 4, new Random(), padding);
+
+        Entity player = new(spawn.x, spawn.y, "THESEUS")
+            { Size = 2 };
+
+    ;                                                                                                                                                                        
                                                                                                                                                                                                                                
         ScreenObject root = new ScreenObject();                                                                                                                                                                                  
                                                                                                                                                                                                                                 
-        SubnetRenderer renderer = new(grid, player,enemies);                                                                                                                                                                             
+        SubnetRenderer renderer = new(grid, player,enemies ,customFont);                                                                                                                                                                             
         renderer.Position = new Point(0, 0);                                                                                                                                                                                     
         renderer.Font = font8x8;                                                                                                                                                                                              
         root.Children.Add(renderer);                                                                                                                                                                                             
@@ -44,7 +48,7 @@
             ICellSurface.ConnectedLineThin,                                                                                                                                                                                          
             new ColoredGlyph(Color.DarkSlateGray, Color.Black)                                                                                                                                                                       
         ));                                                                                      
-        messageLog.Surface.Print(2, 0, " [TERMINAL // MINOS_NET] ", Color.Cyan);                                                                                                                                                
+        messageLog.Surface.Print(2, 0, " [TERMINAL] ", Color.Cyan);                                                                                                                                                
         root.Children.Add(messageLog);                                                                                                                                                                                           
         
         SadConsole.Console cyberdeckHud = new SadConsole.Console(23, 45);                                                                                                                                                                              
