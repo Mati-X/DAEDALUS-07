@@ -1,0 +1,7 @@
+﻿{
+  "name": "Crimson ICE",
+  "primary": "#DC143C",
+  "floor": "#FFFFFF",
+  "player": "#FFD700",
+  "enemy": "#FF1010"
+}
