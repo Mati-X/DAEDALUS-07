@@ -223,9 +223,51 @@ public class SubnetRenderer : ScreenSurface
         return base.ProcessKeyboard(keyboard);
     }
 
+    private bool IsRoofAt(int x, int y)
+    {
+        if (!_grid.IsInBounds(x, y + 2)) return false;
+
+        return _grid[x, y].Type == SubnetNodeType.Wall &&
+               _grid[x, y + 1].Type == SubnetNodeType.Wall &&
+               _grid[x, y + 2].Type == SubnetNodeType.Floor;
+    }
+    
+    private int GetGlyph(SubnetNode node, bool isFrontWall, bool isRoof)
+    {
+        return node.Type switch
+        {
+            SubnetNodeType.Void => ' ',
+            SubnetNodeType.Floor => '.',
+            SubnetNodeType.Wall => isRoof ? 220 : 219,
+            _ => ' '
+        };
+    }
+    
+    private Color GetForeground(SubnetNode node, bool isFrontWall, bool isRoof)
+    {
+        if (node.Type == SubnetNodeType.Floor)
+        {
+            return node.IsSight ? Color.White : Color.DarkSlateGray;
+        }
+
+        if (node.Type == SubnetNodeType.Wall)
+        {
+            if (node.IsSight)
+            {
+                return isFrontWall ? Color.Crimson : Color.Red;
+            }
+            else
+            {
+                return isFrontWall ? Color.DarkRed : Color.Maroon;
+            }
+        }
+
+        return Color.White;
+    }
+
     public void Render()
     {
-        char glyph = ' ';
+        int glyph = ' ';
         Color foreground = Color.White;
         for (int x = 0; x < _grid.Width; x++)
         {
@@ -235,23 +277,45 @@ public class SubnetRenderer : ScreenSurface
                 foreground = Color.White;
                 
                 var node = _grid[x, y];
-                if (node.IsDiscovered)
+                
+                bool isFrontWall = node.Type == SubnetNodeType.Wall && 
+                                   _grid.IsInBounds(x, y + 1) && 
+                                   _grid[x, y + 1].Type == SubnetNodeType.Floor;
+                
+                bool hasSideWallAbove = _grid.IsInBounds(x, y - 1) && 
+                                        _grid[x, y - 1].Type == SubnetNodeType.Wall &&
+                                        ((_grid.IsInBounds(x - 1, y - 1) && _grid[x - 1, y - 1].Type == SubnetNodeType.Floor) ||
+                                         (_grid.IsInBounds(x + 1, y - 1) && _grid[x + 1, y - 1].Type == SubnetNodeType.Floor));
+                
+                bool isRoof = !hasSideWallAbove && node.Type == SubnetNodeType.Wall && !isFrontWall && (
+                    IsRoofAt(x, y) || 
+                    (_grid.IsInBounds(x - 1, y) && IsRoofAt(x - 1, y)) || 
+                    (_grid.IsInBounds(x + 1, y) && IsRoofAt(x + 1, y))
+                );
+                
+                bool isDiscovered = node.IsDiscovered;
+
+                if (!isDiscovered && _grid.IsInBounds(x, y + 1))
                 {
-                    glyph = node.Type switch
+                    var below = _grid[x, y + 1];
+                    if (below.Type == SubnetNodeType.Wall && (below.IsDiscovered && 
+                        _grid.IsInBounds(x, y + 2) && _grid[x, y + 2].Type == SubnetNodeType.Floor) || (_grid.IsInBounds(x+1,y+2) && _grid[x+1, y + 1].IsDiscovered &&  _grid[x+1, y + 2].Type == SubnetNodeType.Floor)
+                        || (_grid.IsInBounds(x-1,y+2) && _grid[x-1, y + 1].IsDiscovered &&  _grid[x-1, y + 2].Type == SubnetNodeType.Floor))
                     {
-                        SubnetNodeType.Void => ' ',
-                        SubnetNodeType.Floor => '.',
-                        SubnetNodeType.Wall => '#',
-                        _ => ' '
-                    };
-                    foreground = node.Type switch
-                    {
-                        SubnetNodeType.Floor => node.IsSight ? Color.White : Color.DarkSlateGray,
-                        SubnetNodeType.Wall => node.IsSight ? Color.Red : Color.DarkRed,
-                        _ => Color.White
-                    };
+                        isDiscovered = true;
+                    }
                 }
-                Surface.SetGlyph(x, y, glyph, foreground, Color.Black);                                                                                                                                                                                                                                                                             
+                
+                if (isDiscovered)
+                {
+                    glyph = GetGlyph(node, isFrontWall, isRoof);
+                    foreground = GetForeground(node, isFrontWall, isRoof);
+                    Surface.SetGlyph(x, y, glyph, foreground, Color.Black);   
+                }
+                else
+                {
+                    Surface.SetGlyph(x, y, ' ', Color.White, Color.Black);
+                }
             }
             
         }
