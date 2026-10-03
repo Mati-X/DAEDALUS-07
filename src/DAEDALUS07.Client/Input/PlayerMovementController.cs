@@ -1,31 +1,76 @@
-﻿using DAEDALUS07.Core.Entities;
+using DAEDALUS07.Client.Effects;
+using DAEDALUS07.Core.Entities;
 using DAEDALUS07.Core.Grid;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using System;
+using System.Collections.Generic;
 
 namespace DAEDALUS07.Client.Input;
 
 public class PlayerMovementController
 {
     private float _currentMoveCooldown = 0f;
-    private readonly float _moveCooldown = 0.05f;
-    
-    public bool Update(TimeSpan delta, Entity player, SubnetGrid grid)
+    private readonly float _moveCooldown = 0.04f;
+
+    private float _currentDashCooldown = 0f;
+    private readonly float _dashCooldown = 0.35f;
+    private const int DashDistance = 6;
+
+    public bool Update(TimeSpan delta, Entity player, SubnetGrid grid, GhostTrailEffect? ghostTrail = null)
     {
-        if (_currentMoveCooldown > 0)
-        {
-            _currentMoveCooldown -= (float)delta.TotalSeconds;
-        }
+        float deltaSeconds = (float)delta.TotalSeconds;
+
+        if (_currentMoveCooldown > 0f)
+            _currentMoveCooldown -= deltaSeconds;
+
+        if (_currentDashCooldown > 0f)
+            _currentDashCooldown -= deltaSeconds;
 
         var keyboard = SadConsole.GameHost.Instance.Keyboard;
         var (kdx, kdy) = GetKeyboardMovement(keyboard);
-        
+
         GamePadState pad = GamePad.GetState(PlayerIndex.One);
         var (pdx, pdy) = pad.IsConnected ? GetPadMovement(pad) : (0, 0);
 
         int moveX = kdx != 0 ? kdx : pdx;
         int moveY = kdy != 0 ? kdy : pdy;
 
+        // Blink / Dash trigger (PPM lub Pad Button.B)
+        bool dashTriggered = SadConsole.GameHost.Instance.Mouse.RightClicked ||
+                             (pad.IsConnected && pad.Buttons.B == ButtonState.Pressed);
+
+        if (dashTriggered && _currentDashCooldown <= 0f && (moveX != 0 || moveY != 0))
+        {
+            _currentDashCooldown = _dashCooldown;
+
+            int startX = player.x;
+            int startY = player.y;
+            List<(int x, int y)> trailPositions = [];
+
+            for (int step = 1; step <= DashDistance; step++)
+            {
+                if (!player.TryMove(moveX, moveY, grid))
+                    break;
+
+                trailPositions.Add((player.x, player.y));
+            }
+
+            if (trailPositions.Count > 0 && ghostTrail != null)
+            {
+                ghostTrail.SpawnGhost(startX, startY, Theme.Current.Player, 0.25f);
+
+                for (int i = 0; i < trailPositions.Count - 1; i += 2)
+                {
+                    var (gx, gy) = trailPositions[i];
+                    ghostTrail.SpawnGhost(gx, gy, Theme.Current.Player, 0.20f);
+                }
+            }
+
+            return trailPositions.Count > 0;
+        }
+
+        // Zwykły ruch mikrokrokowy
         if ((moveX != 0 || moveY != 0) && _currentMoveCooldown <= 0f)
         {
             _currentMoveCooldown = _moveCooldown;
@@ -35,31 +80,31 @@ public class PlayerMovementController
         return false;
     }
 
-    private (int x, int y) GetKeyboardMovement(SadConsole.Input.Keyboard keyboard)                                                                                                                                               
-    {                                                                                                                                                                                                                            
-        int dx = 0, dy = 0;                                                                                
-        
-        if (keyboard.IsKeyDown(SadConsole.Input.Keys.W) || keyboard.IsKeyDown(SadConsole.Input.Keys.Up)) dy--;                                                                                                                   
-        else if (keyboard.IsKeyDown(SadConsole.Input.Keys.S) || keyboard.IsKeyDown(SadConsole.Input.Keys.Down)) dy++;  
-        
-        if (keyboard.IsKeyDown(SadConsole.Input.Keys.A) || keyboard.IsKeyDown(SadConsole.Input.Keys.Left)) dx--;                                                                                                            
-        else if (keyboard.IsKeyDown(SadConsole.Input.Keys.D) || keyboard.IsKeyDown(SadConsole.Input.Keys.Right)) dx++;     
-        
-        return (dx, dy);                                                                                                                                                                                                         
-    }     
-    
+    private (int x, int y) GetKeyboardMovement(SadConsole.Input.Keyboard keyboard)
+    {
+        int dx = 0, dy = 0;
+
+        if (keyboard.IsKeyDown(SadConsole.Input.Keys.W) || keyboard.IsKeyDown(SadConsole.Input.Keys.Up)) dy--;
+        else if (keyboard.IsKeyDown(SadConsole.Input.Keys.S) || keyboard.IsKeyDown(SadConsole.Input.Keys.Down)) dy++;
+
+        if (keyboard.IsKeyDown(SadConsole.Input.Keys.A) || keyboard.IsKeyDown(SadConsole.Input.Keys.Left)) dx--;
+        else if (keyboard.IsKeyDown(SadConsole.Input.Keys.D) || keyboard.IsKeyDown(SadConsole.Input.Keys.Right)) dx++;
+
+        return (dx, dy);
+    }
+
     private (int dx, int dy) GetPadMovement(GamePadState pad)
     {
         int dx = 0;
         int dy = 0;
-        
+
         if (pad.DPad.Up == ButtonState.Pressed) dy--;
         else if (pad.DPad.Down == ButtonState.Pressed) dy++;
-        
+
         if (pad.DPad.Left == ButtonState.Pressed) dx--;
         else if (pad.DPad.Right == ButtonState.Pressed) dx++;
 
-        if (dx != 0 || dy != 0 || pad.ThumbSticks.Left is { X: 0, Y: 0 } ) return (dx, dy);
+        if (dx != 0 || dy != 0 || pad.ThumbSticks.Left is { X: 0, Y: 0 }) return (dx, dy);
 
         switch (pad.ThumbSticks.Left.X)
         {
@@ -82,6 +127,5 @@ public class PlayerMovementController
         }
 
         return (dx, dy);
-
     }
 }

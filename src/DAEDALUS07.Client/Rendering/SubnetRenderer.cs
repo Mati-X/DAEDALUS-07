@@ -1,4 +1,5 @@
-﻿using DAEDALUS07.Client.Input;
+using DAEDALUS07.Client.Effects;
+using DAEDALUS07.Client.Input;
 using DAEDALUS07.Core.Entities;
 using DAEDALUS07.Core.Fov;
 using SadConsole;
@@ -21,6 +22,7 @@ public class SubnetRenderer : ScreenSurface
     
     private readonly CameraController _cameraController;
     private readonly PlayerMovementController _playerMovementController = new();
+    private readonly GhostTrailEffect _ghostTrailEffect;
 
     public SubnetRenderer(SubnetGrid grid, Entity player, List<Entity> enemies, IFont font16x16) : base(116,74, grid.Width, grid.Height)
     {
@@ -38,6 +40,9 @@ public class SubnetRenderer : ScreenSurface
         int maxPixelY = (_grid.Height - Surface.ViewHeight) * FontSize.Y;
 
         _cameraController = new CameraController(Math.Clamp(player.x * FontSize.X - (Surface.ViewWidth / 2f * FontSize.X), 0, maxPixelX), Math.Clamp(player.y * FontSize.Y - (Surface.ViewHeight / 2f * FontSize.Y), 0, maxPixelY), this);
+        
+        _ghostTrailEffect = new GhostTrailEffect(this, font16x16);
+
         _playerSurface = new ScreenSurface(1, 1)
         {
             Font = font16x16,
@@ -52,9 +57,13 @@ public class SubnetRenderer : ScreenSurface
 
     private float GetIntensity(int x, int y)
     {
-        float dx = x - _player.x;
-        float dy = y - _player.y;
+        float centerX = _player.x + (_player.Size / 2f);
+        float centerY = _player.y + (_player.Size / 2f);
+
+        float dx = x - centerX;
+        float dy = y - centerY;
         float distance = MathF.Sqrt(dx * dx + dy * dy);
+        
         float light = 1f - Math.Clamp(distance / FovRadius, 0f, 1f);
         return light * light;
     }
@@ -66,7 +75,7 @@ public class SubnetRenderer : ScreenSurface
 
     public override void Update(TimeSpan delta)
     {
-        if (_playerMovementController.Update(delta, _player, _grid))
+        if (_playerMovementController.Update(delta, _player, _grid, _ghostTrailEffect))
         {
             UpdateFov();
             Render();
@@ -83,6 +92,8 @@ public class SubnetRenderer : ScreenSurface
         int px = (_player.x - cellX) * FontSize.X;
         int py = (_player.y - cellY) * FontSize.Y;
         _playerSurface.Position = new Point(px, py);
+
+        _ghostTrailEffect.Update(delta, cellX, cellY, FontSize);
     }
     
     private void UpdateFov()
