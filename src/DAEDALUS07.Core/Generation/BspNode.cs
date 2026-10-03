@@ -36,7 +36,8 @@ public class BspNode
         if (max <= minSize)
             return false;
         
-        int split = random.Next(minSize,max);
+        int split = random.Next(minSize, max);
+        split -= split % 2;
 
         if (isVertical)                                                                                                                                                                                                                      
         {                                                                                                                                                                                                                                    

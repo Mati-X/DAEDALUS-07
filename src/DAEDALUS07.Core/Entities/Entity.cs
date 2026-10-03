@@ -18,15 +18,13 @@ public class Entity
         int targetX = x + dx;
         int targetY = y + dy;
 
+        int feetY = targetY + (Size - 1);
+
         for (int cx = 0; cx < Size; cx++)
         {
-            for (int cy = 0; cy < Size; cy++)
-            {
-                int checkX = targetX + cx;
-                int checkY = targetY + cy;
-                if (!grid.IsInBounds(checkX, checkY) || !grid[checkX, checkY].IsPassable)
-                    return false;
-            }
+            int checkX = targetX + cx;
+            if (!grid.IsInBounds(checkX, feetY) || !grid[checkX, feetY].IsPassable)
+                return false;
         }
 
         x = targetX;
