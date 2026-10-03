@@ -5,6 +5,7 @@ public enum SubnetNodeType : byte
     Void,
     Wall,
     Floor,
+    Daemon,
     ServerTerminal,
     LaserBarrier
 }

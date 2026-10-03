@@ -1,3 +1,4 @@
+using DAEDALUS07.Core.Entities;
 using DAEDALUS07.Core.Grid;
 using DAEDALUS07.Core.Primitives;
 
@@ -84,7 +85,7 @@ public class BspDungeonGenerator
         ConnectPoints(grid, leftPoint, rightPoint, random);
     }
 
-    public static (List<Rect> rooms, (int x, int y) playerSpawn) Generate(SubnetGrid grid, int minSize, int maxSplits,
+    public static (List<Rect> rooms, (int x, int y) playerSpawn, List<Entity> enemies) Generate(SubnetGrid grid, int minSize, int maxSplits,
         Random random, int padding)
     {
         BspNode root = new BspNode(new Rect(padding, padding, grid.Width - 2 * padding, grid.Height - 2 * padding));
@@ -117,9 +118,16 @@ public class BspDungeonGenerator
                 
                 grid.CreateRoom(room.Width, room.Height, room.X, room.Y);
             }
+            
+            List<Entity> enemies = [];                                                                                                                                                                                                 
+                foreach (var room in rooms.Skip(1))                                                                                                                                                                                        
+                {                                                                                                                                                                                                                          
+                    var (ex, ey) = GetRandomPointInRoom(room, random);                                                                                                                                                                     
+                    enemies.Add(new Entity(ex, ey, "MINOS_DAEMON", 'D', 30));                                                                                                                                                              
+                }       
 
             ConnectNodes(grid, root, random);
-            return (rooms, rooms[0].Center);
+            return (rooms, rooms[0].Center, enemies);
     }
     
 }

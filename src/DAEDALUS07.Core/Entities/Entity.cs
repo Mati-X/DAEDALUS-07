@@ -7,6 +7,10 @@ public class Entity
     public int x { get; set; }
     public int y { get; set; }
     public string Name { get; }
+    public char Glyph { get; set; } 
+    public int MaxIntegrity { get; set; } 
+    public int Integrity { get; set; }
+    public bool IsAlive => Integrity > 0;
 
     public bool TryMove(int dx, int dy, SubnetGrid grid)
     {
@@ -19,10 +23,13 @@ public class Entity
             
     }
     
-    public Entity(int x, int y, string name)
+    public Entity(int x, int y, string name, char glyph = '@', int maxIntegrity = 100) 
     {
         this.x = x;
         this.y = y;
         Name = name;
+        Glyph = glyph;
+        MaxIntegrity = maxIntegrity;
+        Integrity = maxIntegrity;
     }
 }

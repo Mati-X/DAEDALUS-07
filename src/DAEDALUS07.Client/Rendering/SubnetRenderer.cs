@@ -13,6 +13,7 @@ public class SubnetRenderer : ScreenSurface
     private readonly SubnetGrid _grid;
     private readonly ShadowcastFov _fov = new();
     private Entity _player;
+    private readonly List<Entity> _enemies;
         
     private float _currentOffsetX;                                                                                                                                                                                          
     private float _currentOffsetY;  
@@ -25,10 +26,10 @@ public class SubnetRenderer : ScreenSurface
     private const float CameraSpeed = 2f;
     
     private float _currentMoveCooldown = 0f;
-    private float _moveCooldown = 0.18f;
+    private float _moveCooldown = 0.12f;
     private bool _isMoving = false;
 
-    public SubnetRenderer(SubnetGrid grid, Entity player) : base(58,37, grid.Width, grid.Height)
+    public SubnetRenderer(SubnetGrid grid, Entity player, List<Entity> enemies) : base(58,37, grid.Width, grid.Height)
     {
         _grid = grid;
         
@@ -37,6 +38,8 @@ public class SubnetRenderer : ScreenSurface
         IsFocused = true;
         UsePixelPositioning = true;
         _player = player;
+
+        _enemies = enemies;
         
         int maxPixelX = (_grid.Width - Surface.ViewWidth) * FontSize.X;                                                                                                                                                              
         int maxPixelY = (_grid.Height - Surface.ViewHeight) * FontSize.Y;                                                                                                                                                            
@@ -63,25 +66,23 @@ public class SubnetRenderer : ScreenSurface
             _currentMoveCooldown -= (float)delta.TotalSeconds;
         }
 
-        if (pad.IsConnected)
-        {
-            var (pdx, pdy) = GetPadMovement(pad);
-
-            if (pdx == 0 && pdy == 0)
-            {
-                _currentMoveCooldown = 0f;
-            }
-            else if (_currentMoveCooldown <= 0f)
-            {
-                if (_player.TryMove(pdx, pdy, _grid))
-                {
-                    _fov.Compute(_grid,_player.x, _player.y, 8);
-                    Render();
-                }
-
-                _currentMoveCooldown = _moveCooldown;
-            }
-        }
+        var keyboard = SadConsole.GameHost.Instance.Keyboard;                                                                                                                                                                        
+        var (kdx, kdy) = GetKeyboardMovement(keyboard);                                                                                                                                                                              
+        var (pdx, pdy) = pad.IsConnected ? GetPadMovement(pad) : (0, 0);                                                                                                                                                             
+                                                                                                                                                                                                                                     
+        int moveX = kdx != 0 ? kdx : pdx;                                                                                                                                                                                            
+        int moveY = kdy != 0 ? kdy : pdy;                                                                                                                                                                                            
+                                                                                                                                                                                                                                   
+        if ((moveX != 0 || moveY != 0) && _currentMoveCooldown <= 0f)                                                                                                                                                                
+        {                                                                                                                                                                                                                            
+            if (_player.TryMove(moveX, moveY, _grid))                                                                                                                                                                                
+            {                                                                                                                                                                                                                        
+                _fov.Compute(_grid, _player.x, _player.y, 8);                                                                                                                                                                        
+                Render();                                                                                                                                                                                                            
+            }                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                     
+            _currentMoveCooldown = _moveCooldown;                                                                                                                                                                                    
+        }       
 
         if (pad.IsConnected)
         {
@@ -167,14 +168,28 @@ public class SubnetRenderer : ScreenSurface
         return ((int)mouseVecX, (int)mouseVecY);
     }
 
-    public (int dx, int dy) GetPadMovement(GamePadState pad)
+    private (int x, int y) GetKeyboardMovement(SadConsole.Input.Keyboard keyboard)                                                                                                                                               
+    {                                                                                                                                                                                                                            
+        int dx = 0, dy = 0;                                                                                
+        
+        if (keyboard.IsKeyDown(SadConsole.Input.Keys.W) || keyboard.IsKeyDown(SadConsole.Input.Keys.Up)) dy--;                                                                                                                   
+        else if (keyboard.IsKeyDown(SadConsole.Input.Keys.S) || keyboard.IsKeyDown(SadConsole.Input.Keys.Down)) dy++;  
+        
+        if (keyboard.IsKeyDown(SadConsole.Input.Keys.A) || keyboard.IsKeyDown(SadConsole.Input.Keys.Left)) dx--;                                                                                                            
+        else if (keyboard.IsKeyDown(SadConsole.Input.Keys.D) || keyboard.IsKeyDown(SadConsole.Input.Keys.Right)) dx++;     
+        
+        return (dx, dy);                                                                                                                                                                                                         
+    }     
+    
+    private (int dx, int dy) GetPadMovement(GamePadState pad)
     {
         int dx = 0;
         int dy = 0;
         
         if (pad.DPad.Up == ButtonState.Pressed) dy--;
         else if (pad.DPad.Down == ButtonState.Pressed) dy++;
-        else if (pad.DPad.Left == ButtonState.Pressed) dx--;
+        
+        if (pad.DPad.Left == ButtonState.Pressed) dx--;
         else if (pad.DPad.Right == ButtonState.Pressed) dx++;
 
         if (dx != 0 || dy != 0 || pad.ThumbSticks.Left is { X: 0, Y: 0 } ) return (dx, dy);
@@ -205,20 +220,7 @@ public class SubnetRenderer : ScreenSurface
 
     public override bool ProcessKeyboard(SadConsole.Input.Keyboard keyboard)
     {
-        int dx = 0;
-        int dy = 0;
-        
-        if(keyboard.IsKeyPressed(SadConsole.Input.Keys.Up) || keyboard.IsKeyPressed(SadConsole.Input.Keys.W)) dy--;
-        else if (keyboard.IsKeyPressed(SadConsole.Input.Keys.Down) || keyboard.IsKeyPressed(SadConsole.Input.Keys.S)) dy++;
-        else if (keyboard.IsKeyPressed(SadConsole.Input.Keys.Left) || keyboard.IsKeyPressed(SadConsole.Input.Keys.A)) dx--;
-        else if (keyboard.IsKeyPressed(SadConsole.Input.Keys.Right) || keyboard.IsKeyPressed(SadConsole.Input.Keys.D)) dx++;
-
-        if (dx == 0 && dy == 0 || !_player.TryMove(dx, dy, _grid)) return base.ProcessKeyboard(keyboard);
-
-        _fov.Compute(_grid, _player.x, _player.y, 8);
-        Render();
-        return true;
-
+        return base.ProcessKeyboard(keyboard);
     }
 
     public void Render()
@@ -253,6 +255,14 @@ public class SubnetRenderer : ScreenSurface
             }
             
         }
+
+        foreach (var enemy in  _enemies)
+        {
+            if(!enemy.IsAlive) continue;
+            if(!_grid[enemy.x,enemy.y].IsSight) continue;
+            Surface.SetGlyph(enemy.x, enemy.y, enemy.Glyph, Color.Red, Color.Black); 
+        }
+        
         Surface.SetGlyph(_player.x , _player.y, '@', Color.Yellow, Color.Black);
         IsDirty = true;
     }
