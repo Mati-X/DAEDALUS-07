@@ -20,12 +20,13 @@
                                                                                                                                                                                                                                                  
      void Startup(object? sender, GameHost host)                                                                                                                                                                                  
     {                                                                                                                                                                                                                            
-        var customFont = host.LoadFont("Fonts/IBM16x16.font");                                                                                                                                                                     
+        var customFont = host.LoadFont("Fonts/IBM16x16.font"); 
+        var font8x8 = host.LoadFont("Fonts/IBM8x8.font");
         GameHost.Instance.DefaultFont = customFont;                                                                                                                                                                              
                                                                                                                                                                                                                                  
         int padding = 100;                                                                                                                                                                                                       
-        SubnetGrid grid = new(140 + padding * 2, 90 + padding * 2);                                                                                                                                                              
-        var (rooms, spawn,enemies) = BspDungeonGenerator.Generate(grid, minSize: 16, maxSplits: 4, new Random(), padding);                                                                                                               
+        SubnetGrid grid = new(280 + padding * 2, 180 + padding * 2);                                                                                                                                                              
+        var (rooms, spawn,enemies) = BspDungeonGenerator.Generate(grid, minSize: 32, maxSplits: 4, new Random(), padding);                                                                                                               
                                                                                                                                                                                                                                  
         Entity player = new(spawn.x, spawn.y, "THESEUS");                                                                                                                                                                        
                                                                                                                                                                                                                                
@@ -33,7 +34,7 @@
                                                                                                                                                                                                                                 
         SubnetRenderer renderer = new(grid, player,enemies);                                                                                                                                                                             
         renderer.Position = new Point(0, 0);                                                                                                                                                                                     
-        renderer.Font = customFont;                                                                                                                                                                                              
+        renderer.Font = font8x8;                                                                                                                                                                                              
         root.Children.Add(renderer);                                                                                                                                                                                             
                                                                                                                                                                                                                                 
         SadConsole.Console messageLog = new SadConsole.Console(56, 9);                                                                                                                                                                                
@@ -58,8 +59,7 @@
         
         var graphics = (Microsoft.Xna.Framework.GraphicsDeviceManager)                                                                                                                                                               
             SadConsole.Game.Instance.MonoGameInstance.Services.GetService(typeof(Microsoft.Xna.Framework.IGraphicsDeviceManager))!;                                                                                                   
-                                                                                                                                                                                                                                 
-        graphics.IsFullScreen = true;                                                                                                                                                                                                
+                                                                                                                                                                                                                                    
         graphics.ApplyChanges();    
         
         Game.Instance.Screen = root;                                                                                                                                                                                             

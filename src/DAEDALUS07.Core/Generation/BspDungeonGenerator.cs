@@ -11,6 +11,8 @@ public class BspDungeonGenerator
         for (int x = Math.Min(xStart, xEnd); x <= Math.Max(xStart, xEnd); x++)
         {
             grid[x, y] = new SubnetNode(true, true, SubnetNodeType.Floor);
+            grid[x, y+1] = new SubnetNode(true, true, SubnetNodeType.Floor);
+            
         }
     }
 
@@ -19,6 +21,7 @@ public class BspDungeonGenerator
         for (int y = Math.Min(yStart, yEnd); y <= Math.Max(yStart, yEnd); y++)
         {
             grid[x, y] = new SubnetNode(true, true, SubnetNodeType.Floor);
+            grid[x+1, y] = new SubnetNode(true, true, SubnetNodeType.Floor);
         }
     }
 

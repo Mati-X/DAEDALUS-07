@@ -20,16 +20,20 @@ public class SubnetRenderer : ScreenSurface
     
     private const int LookAheadRadiusCells = 4;
     private const float LerpSpeed = 4f;
+    private const int FovRadius = 16;
     
     private float _cameraX;                                                                                                                                                                                                      
     private float _cameraY;                                                                                                                                                                                                      
     private const float CameraSpeed = 2f;
     
     private float _currentMoveCooldown = 0f;
-    private float _moveCooldown = 0.12f;
+    private float _moveCooldown = 0.02f;
     private bool _isMoving = false;
+    
+    private double _fpsTimer = 0;
+    private int _frameCount = 0;
 
-    public SubnetRenderer(SubnetGrid grid, Entity player, List<Entity> enemies) : base(58,37, grid.Width, grid.Height)
+    public SubnetRenderer(SubnetGrid grid, Entity player, List<Entity> enemies) : base(116,74, grid.Width, grid.Height)
     {
         _grid = grid;
         
@@ -47,12 +51,23 @@ public class SubnetRenderer : ScreenSurface
         _cameraX = Math.Clamp(player.x * FontSize.X - (Surface.ViewWidth / 2f * FontSize.X), 0, maxPixelX);                                                                                                                          
         _cameraY = Math.Clamp(player.y * FontSize.Y - (Surface.ViewHeight / 2f * FontSize.Y), 0, maxPixelY);        
         
-        _fov.Compute(grid, player.x, player.y, 8);
+        _fov.Compute(grid, player.x, player.y, FovRadius);
         Render();
     }
 
     public override void Update(TimeSpan delta)
     {
+        _frameCount++;
+        _fpsTimer += delta.TotalSeconds;
+
+        if (_fpsTimer >= 1.0)
+        {
+            int fps = _frameCount;
+            _frameCount = 0;
+            _fpsTimer = 0;
+
+            SadConsole.Game.Instance.MonoGameInstance.Window.Title = $"DAEDALUS-07 // FPS: {fps}";
+        }
         
         
         GamePadState pad = Microsoft.Xna.Framework.Input.GamePad.GetState(Microsoft.Xna.Framework.PlayerIndex.One);
@@ -77,7 +92,7 @@ public class SubnetRenderer : ScreenSurface
         {                                                                                                                                                                                                                            
             if (_player.TryMove(moveX, moveY, _grid))                                                                                                                                                                                
             {                                                                                                                                                                                                                        
-                _fov.Compute(_grid, _player.x, _player.y, 8);                                                                                                                                                                        
+                _fov.Compute(_grid, _player.x, _player.y, FovRadius);                                                                                                                                                                        
                 Render();                                                                                                                                                                                                            
             }                                                                                                                                                                                                                        
                                                                                                                                                                                                                                      
@@ -243,35 +258,36 @@ public class SubnetRenderer : ScreenSurface
         };
     }
     
-    private Color GetForeground(SubnetNode node, bool isFrontWall, bool isRoof)
+    private Color GetForeground(SubnetNode node, bool isFrontWall, bool isRoof, float intensity)
     {
         if (node.Type == SubnetNodeType.Floor)
         {
-            return node.IsSight ? Color.White : Color.DarkSlateGray;
+            if (!node.IsSight) return Color.DarkSlateGray;
+            return Color.Lerp(Color.DarkSlateGray, Color.White, intensity);
         }
-
         if (node.Type == SubnetNodeType.Wall)
         {
-            if (node.IsSight)
-            {
-                return isFrontWall ? Color.Crimson : Color.Red;
-            }
-            else
-            {
-                return isFrontWall ? Color.DarkRed : Color.Maroon;
-            }
+            Color bright = isFrontWall ? Color.Crimson : Color.Red;
+            Color dim = isFrontWall ? Color.DarkRed : Color.Maroon;
+            if (!node.IsSight) return dim;
+            return Color.Lerp(dim, bright, intensity);
         }
-
         return Color.White;
     }
 
     public void Render()
     {
+        int startX = Math.Max(0, _player.x - FovRadius - 4);
+        int endX = Math.Min(_grid.Width - 1, _player.x + FovRadius + 4);
+
+        int startY = Math.Max(0, _player.y - FovRadius - 4);
+        int endY = Math.Min(_grid.Height - 1, _player.y + FovRadius + 4);
+        
         int glyph = ' ';
         Color foreground = Color.White;
-        for (int x = 0; x < _grid.Width; x++)
+        for (int x = startX; x < endX; x++)
         {
-            for (int y = 0; y < _grid.Height; y++)
+            for (int y = startY; y < endY; y++)
             {
                 glyph = ' ';
                 foreground = Color.White;
@@ -306,16 +322,22 @@ public class SubnetRenderer : ScreenSurface
                     }
                 }
                 
+                float intensity = 0f;
+                if (node.IsSight)
+                {
+                    float dx = x - _player.x;
+                    float dy = y - _player.y;
+                    float distance = MathF.Sqrt(dx * dx + dy * dy);
+                    float light = 1f - Math.Clamp(distance / FovRadius, 0f, 1f);
+                    intensity = light * light;
+                }
+                
                 if (isDiscovered)
                 {
                     glyph = GetGlyph(node, isFrontWall, isRoof);
-                    foreground = GetForeground(node, isFrontWall, isRoof);
-                    Surface.SetGlyph(x, y, glyph, foreground, Color.Black);   
+                    foreground = GetForeground(node, isFrontWall, isRoof,intensity);
                 }
-                else
-                {
-                    Surface.SetGlyph(x, y, ' ', Color.White, Color.Black);
-                }
+                Surface.SetGlyph(x, y, glyph, foreground, Color.Black); 
             }
             
         }
