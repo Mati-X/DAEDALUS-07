@@ -10,19 +10,20 @@ namespace DAEDALUS07.Client.Input;
 
 public class PlayerMovementController
 {
-    private float _currentMoveCooldown = 0f;
-    private readonly float _moveCooldown = 0.04f;
 
     private float _currentDashCooldown = 0f;
     private readonly float _dashCooldown = 0.35f;
     private const int DashDistance = 6;
 
+    private const float InitialDelay = 0.18f;
+    private const float RepeatRate = 0.08f;
+
+    private float _holdTimer = 0f;
+    (int dx, int dy) _lastDirection = (0, 0);
+
     public bool Update(TimeSpan delta, Entity player, SubnetGrid grid, GhostTrailEffect? ghostTrail = null)
     {
         float deltaSeconds = (float)delta.TotalSeconds;
-
-        if (_currentMoveCooldown > 0f)
-            _currentMoveCooldown -= deltaSeconds;
 
         if (_currentDashCooldown > 0f)
             _currentDashCooldown -= deltaSeconds;
@@ -36,7 +37,7 @@ public class PlayerMovementController
         int moveX = kdx != 0 ? kdx : pdx;
         int moveY = kdy != 0 ? kdy : pdy;
 
-        // Blink / Dash trigger (PPM lub Pad Button.B)
+        
         bool dashTriggered = SadConsole.GameHost.Instance.Mouse.RightClicked ||
                              (pad.IsConnected && pad.Buttons.B == ButtonState.Pressed);
 
@@ -70,13 +71,26 @@ public class PlayerMovementController
             return trailPositions.Count > 0;
         }
 
-        // Zwykły ruch mikrokrokowy
-        if ((moveX != 0 || moveY != 0) && _currentMoveCooldown <= 0f)
+        if (moveX == 0 && moveY == 0)
         {
-            _currentMoveCooldown = _moveCooldown;
+            _lastDirection = (0, 0);
+            _holdTimer = 0f;
+            return false;
+        }
+        
+        if ((moveX, moveY) != _lastDirection)
+        {
+            _lastDirection = (moveX, moveY);
+            _holdTimer = InitialDelay;
             return player.TryMove(moveX, moveY, grid);
         }
-
+        
+        _holdTimer -= deltaSeconds;
+        if (_holdTimer <= 0f)
+        {
+            _holdTimer = RepeatRate;
+            return player.TryMove(moveX, moveY, grid);
+        }
         return false;
     }
 

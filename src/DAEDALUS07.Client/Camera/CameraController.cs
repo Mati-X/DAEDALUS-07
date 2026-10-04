@@ -47,8 +47,8 @@ public class CameraController
         int maxPixelX = (grid.Width - _subnetRenderer.Surface.ViewWidth) * _subnetRenderer.FontSize.X;
         int maxPixelY = (grid.Height - _subnetRenderer.Surface.ViewHeight) * _subnetRenderer.FontSize.Y;
 
-        float targetCamX = playerPos.X * _subnetRenderer.FontSize.X + offsetX - (_subnetRenderer.Surface.ViewWidth / 2f * _subnetRenderer.FontSize.X);
-        float targetCamY = playerPos.Y * _subnetRenderer.FontSize.Y + offsetY - (_subnetRenderer.Surface.ViewHeight / 2f * _subnetRenderer.FontSize.Y);
+        float targetCamX = playerPos.X + offsetX - (_subnetRenderer.Surface.ViewWidth / 2f * _subnetRenderer.FontSize.X);
+        float targetCamY = playerPos.Y + offsetY - (_subnetRenderer.Surface.ViewHeight / 2f * _subnetRenderer.FontSize.Y);
         targetCamX = Math.Clamp(targetCamX, 0, maxPixelX);
         targetCamY = Math.Clamp(targetCamY, 0, maxPixelY);
 
