@@ -7,7 +7,7 @@ public class BspNode
     public Rect Bounds { get; }
     public BspNode? Left { get; private set; }
     public BspNode? Right { get; private set; }
-    public Rect? Room { get; set; }
+    public Room? Room { get; set; }
     public bool IsLeaf => Left == null && Right == null;
 
     public BspNode(Rect bounds)

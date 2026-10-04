@@ -21,4 +21,9 @@ public readonly struct Rect
         Width = width;
         Height = height;
     }
+    
+    public bool Contains(int x, int y)
+    {
+        return x >= X && x < X + Width && y >= Y && y < Y + Height;
+    }
 }
