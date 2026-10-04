@@ -32,7 +32,7 @@ public class Entity
         return true;
     }
     
-    public Entity(int x, int y, string name, char glyph = '@', int maxIntegrity = 100) 
+    public Entity(int x, int y, string name, char glyph = '@', int maxIntegrity = 100, int size = 1) 
     {
         this.x = x;
         this.y = y;
@@ -40,5 +40,6 @@ public class Entity
         Glyph = glyph;
         MaxIntegrity = maxIntegrity;
         Integrity = maxIntegrity;
+        Size = size;
     }
 }
