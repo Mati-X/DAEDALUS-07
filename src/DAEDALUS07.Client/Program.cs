@@ -27,7 +27,7 @@
 
         int padding = 100;
         SubnetGrid grid = new(280 + padding * 2, 180 + padding * 2);
-        var (rooms, spawn, enemies) = BspDungeonGenerator.Generate(grid, minSize: 32, maxSplits: 4, new Random(), padding);
+        var (rooms, spawn, enemies) = BspDungeonGenerator.Generate(grid, minSize: 64, maxSplits: 3, new Random(), padding);
 
         Entity player = new(spawn.x, spawn.y, "THESEUS")
             { Size = 2 };
@@ -36,20 +36,10 @@
                                                                                                                                                                                                                                
         ScreenObject root = new ScreenObject();                                                                                                                                                                                  
                                                                                                                                                                                                                                 
-        SubnetRenderer renderer = new(grid, player,enemies ,customFont);                                                                                                                                                                             
+        SubnetRenderer renderer = new(grid, player,enemies, rooms, customFont);                                                                                                                                                                             
         renderer.Position = new Point(0, 0);                                                                                                                                                                                     
         renderer.Font = font8x8;                                                                                                                                                                                              
         root.Children.Add(renderer);                                                                                                                                                                                             
-                                                                                                                                                                                                                                
-        SadConsole.Console messageLog = new SadConsole.Console(56, 9);                                                                                                                                                                                
-        messageLog.Position = new Point(0, 36);                                                                                                                                                                                  
-        messageLog.Font = customFont;                                                                                                                                                                                             
-        messageLog.Surface.DrawBox(new Rectangle(0, 0, 56, 9), ShapeParameters.CreateStyledBox(                                                                                                                                                                              
-            ICellSurface.ConnectedLineThin,                                                                                                                                                                                          
-            new ColoredGlyph(Color.DarkSlateGray, Color.Black)                                                                                                                                                                       
-        ));                                                                                      
-        messageLog.Surface.Print(2, 0, " [TERMINAL] ", Color.Cyan);                                                                                                                                                
-        root.Children.Add(messageLog);                                                                                                                                                                                           
         
         SadConsole.Console cyberdeckHud = new SadConsole.Console(23, 45);                                                                                                                                                                              
         cyberdeckHud.Position = new Point(57, 0);                                                                                                                                                                                
