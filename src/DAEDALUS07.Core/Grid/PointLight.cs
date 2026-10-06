@@ -4,7 +4,7 @@ using SadRogue.Primitives;
 
 namespace DAEDALUS07.Core.Grid;
 
-public struct PointLight(int x, int y, int radius, Color color)
+public class PointLight(int x, int y, int radius, Color color)
 {
     public int X = x;
     public int Y = y;

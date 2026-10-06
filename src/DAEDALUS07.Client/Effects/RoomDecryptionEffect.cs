@@ -25,7 +25,6 @@ public class RoomDecryptionEffect
         _originY = originY;
         _currentRadius = 0f;
 
-        // Wyliczamy dystans do najdalszego rogu pokoju:
         int maxDx = Math.Max(Math.Abs(room.Bounds.Left - originX), Math.Abs(room.Bounds.Right - originX));
         int maxDy = Math.Max(Math.Abs(room.Bounds.Top - originY), Math.Abs(room.Bounds.Bottom - originY));
         _maxRadius = MathF.Sqrt(maxDx * maxDx + maxDy * maxDy);
@@ -38,6 +37,19 @@ public class RoomDecryptionEffect
         if (!IsActive || _room == null) return;
 
         _currentRadius += Speed * (float)delta.TotalSeconds;
+        
+        foreach (var light in _room.Lights)
+        {
+            if (!light.IsActive)
+            {
+                float lightDist = MathF.Sqrt((light.X - _originX) * (light.X - _originX) + 
+                                             (light.Y - _originY) * (light.Y - _originY));
+                if (_currentRadius >= lightDist)
+                {
+                    light.IsActive = true;
+                }
+            }
+        }
 
         for (int x = _room.Bounds.Left; x < _room.Bounds.Right; x++)
         {
@@ -56,14 +68,8 @@ public class RoomDecryptionEffect
                         char glitch = GlitchChars[_random.Next(GlitchChars.Length)];
                         surface.SetGlyph(x, y, glitch, Color.Cyan, Color.Black);
                     }
-                    else
-                    {
-                        int glyph = grid[x, y].Type == SubnetNodeType.Floor ? '.' : '#';
-                        Color color = grid[x, y].Type == SubnetNodeType.Floor 
-                            ? Theme.Current.FloorLit 
-                            : Theme.Current.WallFront;
-                        surface.SetGlyph(x, y, glyph, color, Color.Black);
-                    }
+                    
+                    
                 }
             }
         }
@@ -72,7 +78,7 @@ public class RoomDecryptionEffect
         {
             foreach (var (dx, dy) in _room.Doors)
             {
-                grid[dx, dy] = new SubnetNode(true, true, SubnetNodeType.Floor);
+                grid[dx, dy] = new SubnetNode(SubnetNodeType.Floor);
             }
 
             IsActive = false;

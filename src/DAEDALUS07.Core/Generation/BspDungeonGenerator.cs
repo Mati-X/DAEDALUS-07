@@ -15,8 +15,8 @@ public class BspDungeonGenerator
         
         for (int x = Math.Min(xStart, xEnd); x <= Math.Max(xStart, xEnd) + 1; x++)
         {
-            grid[x, y] = new SubnetNode(true, true, SubnetNodeType.Floor);
-            grid[x, y + 1] = new SubnetNode(true, true, SubnetNodeType.Floor);
+            grid[x, y] = new SubnetNode(SubnetNodeType.Floor);
+            grid[x, y + 1] = new SubnetNode(SubnetNodeType.Floor);
         }
     }
 
@@ -24,8 +24,8 @@ public class BspDungeonGenerator
     {
         for (int y = Math.Min(yStart, yEnd); y <= Math.Max(yStart, yEnd) + 1; y++)
         {
-            grid[x, y] = new SubnetNode(true, true, SubnetNodeType.Floor);
-            grid[x + 1, y] = new SubnetNode(true, true, SubnetNodeType.Floor);
+            grid[x, y] = new SubnetNode(SubnetNodeType.Floor);
+            grid[x + 1, y] = new SubnetNode(SubnetNodeType.Floor);
         }
     }
 
@@ -140,7 +140,7 @@ public class BspDungeonGenerator
                 if (grid[x, y].Type == SubnetNodeType.Floor)
                     floors.Add((x, y));
                 else
-                    grid[x, y] = new SubnetNode(false, false, SubnetNodeType.Void);
+                    grid[x, y] = new SubnetNode(SubnetNodeType.Void);
             }
         }
 
@@ -152,7 +152,7 @@ public class BspDungeonGenerator
                 {
                     int wx = fx + dx, wy = fy + dy;
                     if (!grid.IsInBounds(wx, wy) || grid[wx, wy].Type == SubnetNodeType.Floor) continue;
-                    grid[wx, wy] = new SubnetNode(false, false, SubnetNodeType.WallRoof);
+                    grid[wx, wy] = new SubnetNode(SubnetNodeType.WallRoof);
                 }
             }
         }
@@ -165,7 +165,7 @@ public class BspDungeonGenerator
                 {
                     int wx = fx + dx, wy = fy + dy;
                     if (!grid.IsInBounds(wx, wy) || grid[wx, wy].Type == SubnetNodeType.Floor) continue;
-                    grid[wx, wy] = new SubnetNode(false, false, SubnetNodeType.WallFront);
+                    grid[wx, wy] = new SubnetNode(SubnetNodeType.WallFront);
                 }
             }
         }
@@ -220,7 +220,7 @@ public class BspDungeonGenerator
                     for (int x = circle.CenterX - circle.Radius; x <= circle.CenterX + circle.Radius; x++)
                     for (int y = circle.CenterY - circle.Radius; y <= circle.CenterY + circle.Radius; y++)
                         if (circle.Contains(x, y))
-                            grid[x, y] = new SubnetNode(true, true, SubnetNodeType.Floor);
+                            grid[x, y] = new SubnetNode(SubnetNodeType.Floor);
                 }
                 else
                 {
@@ -253,7 +253,7 @@ public class BspDungeonGenerator
                 leaf.Room = room;
                 
                 var center = room.Bounds.Center;
-                grid[center.x, center.y] = new SubnetNode(false, true, SubnetNodeType.ServerTerminal);
+                grid[center.x, center.y] = new SubnetNode(SubnetNodeType.ServerTerminal);
 
                 var mainLight = new PointLight(center.x, center.y, radius: 9, Color.Cyan)
                 {
@@ -268,7 +268,7 @@ public class BspDungeonGenerator
                 {
                     foreach (int cy in cornerYs)
                     {
-                        room.Lights.Add(new PointLight(cx, cy, radius: 4, Color.Goldenrod)
+                        room.Lights.Add(new PointLight(cx, cy, radius: (int)(Math.Sqrt(Math.Abs(cx-center.x)*Math.Abs(cx-center.x)+Math.Abs(cy-center.y)*Math.Abs(cy-center.y))), Color.Goldenrod)
                         {
                             IsActive = (room.Type == RoomType.Spawn)
                         });

@@ -9,5 +9,8 @@ public enum SubnetNodeType : byte
     WallRoof,
     Daemon,
     ServerTerminal,
-    LaserBarrier
+    LaserBarrier,
+    Pillar,
+    LowCover,
+    GlassWall
 }

@@ -2,18 +2,28 @@
 
 public struct SubnetNode
 {
-    public bool IsPassable;
-    public bool IsTransparent;
     public bool IsDiscovered;
     public bool IsSight;
     public SubnetNodeType Type;
-
-    public SubnetNode(bool isPassable, bool isTransparent, SubnetNodeType type = SubnetNodeType.Void) : this()
+    public bool IsPassable => Type switch
     {
-        IsPassable = isPassable;
-        IsTransparent = isTransparent;
+        SubnetNodeType.Floor => true,
+        _ => false
+    };
+    public bool IsTransparent => Type switch
+    {
+        SubnetNodeType.Floor or SubnetNodeType.LaserBarrier or SubnetNodeType.LowCover => true,
+        _ => false
+    };
+    public bool IsShootThrough => Type switch
+    {
+        SubnetNodeType.Floor or SubnetNodeType.LowCover => true,
+        _ => false
+    };
+    public SubnetNode(SubnetNodeType type = SubnetNodeType.Void) : this()
+    {
+        Type = type;
         IsDiscovered = false;
         IsSight = false;
-        Type = type;
     }
 }

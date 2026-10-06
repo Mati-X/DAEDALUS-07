@@ -12,7 +12,7 @@ public sealed class SubnetGrid
         Width = width;
         Height = height;
         _nodes = new SubnetNode[width * height];
-        Array.Fill(_nodes, new SubnetNode(false,false,SubnetNodeType.Wall));
+        Array.Fill(_nodes, new SubnetNode(SubnetNodeType.Wall));
     }
     
     public ref SubnetNode this[int x, int y] => ref _nodes[GetIndex(x, y)];
@@ -29,7 +29,7 @@ public sealed class SubnetGrid
         {
             for (int j = y; j < height+y; j++)
             {
-                this[i, j] = new(true, true, SubnetNodeType.Floor);
+                this[i, j] = new(SubnetNodeType.Floor);
             }
         }
     }

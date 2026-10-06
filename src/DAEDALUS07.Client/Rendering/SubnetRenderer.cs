@@ -27,6 +27,9 @@ public class SubnetRenderer : ScreenSurface
     
     private float _visualPlayerX;
     private float _visualPlayerY;
+    private bool _firstFrame = true;
+
+    private int _lastCellX, _lastCellY;
     
     const float lerpSpeed = 25f;
     
@@ -36,7 +39,7 @@ public class SubnetRenderer : ScreenSurface
     private readonly GhostTrailEffect _ghostTrailEffect;
     private readonly RoomDecryptionEffect _decryptionEffect = new();
 
-    public SubnetRenderer(SubnetGrid grid, Entity player, List<Enemy> enemies, List<Room> rooms, IFont font16x16) : base(116,74, grid.Width, grid.Height)
+    public SubnetRenderer(SubnetGrid grid, Entity player, List<Enemy> enemies, List<Room> rooms, IFont font16x16) : base(116,90, grid.Width, grid.Height)
     {
         _grid = grid;
         _rooms = rooms;
@@ -76,12 +79,83 @@ public class SubnetRenderer : ScreenSurface
         float centerX = _player.x + (_player.Size / 2f);
         float centerY = _player.y + (_player.Size / 2f);
 
-        float dx = x - centerX;
-        float dy = y - centerY;
-        float distance = MathF.Sqrt(dx * dx + dy * dy);
+        float dPlayerX = x - centerX;
+        float dPlayerY = y - centerY;
+        float distance = MathF.Sqrt(dPlayerX * dPlayerX + dPlayerY * dPlayerY);
         
-        float light = 1f - Math.Clamp(distance / FovRadius, 0f, 1f);
-        return light * light;
+        float playerlight = 1f - Math.Clamp(distance / FovRadius, 0f, 1f);
+
+        float lampLight = 0f;
+        foreach (var room in  _rooms)
+        {
+            foreach (var light in room.Lights)
+            {
+                if (light.IsActive)
+                {
+                    float dLightX = x - light.X;
+                    float dLightY = y - light.Y;
+                    float distSq = dLightX * dLightX + dLightY * dLightY;
+                    float radiusSq = light.Radius * light.Radius;
+                            
+                    if (distSq >= radiusSq) continue;
+                            
+                    float dist = MathF.Sqrt(distSq);
+                    float falloff = 1f - (dist / light.Radius);
+                    lampLight += falloff * falloff;
+                }
+            }
+        }
+        float totalLight = Math.Clamp(playerlight + lampLight, 0f, 1f);
+        return totalLight;
+    }
+    
+    private Color GetLightColor(int x, int y)
+    {
+        float r = 0f, g = 0f, b = 0f;
+
+        if (_grid[x, y].IsSight)
+        {
+            float centerX = _player.x + (_player.Size / 2f);
+            float centerY = _player.y + (_player.Size / 2f);
+            float dx = x - centerX, dy = y - centerY;
+            float dist = MathF.Sqrt(dx * dx + dy * dy);
+
+            float pLight = 1f - Math.Clamp(dist / FovRadius, 0f, 1f);
+            pLight *= pLight;
+
+            Color pCol = Theme.Current.FloorLit;
+            r += pCol.R * pLight;
+            g += pCol.G * pLight;
+            b += pCol.B * pLight;
+        }
+
+        foreach (var room in _rooms)
+        {
+            foreach (var light in room.Lights)
+            {
+                if (!light.IsActive) continue;
+
+                float ldx = x - light.X;
+                float ldy = y - light.Y;
+                float distSq = ldx * ldx + ldy * ldy;
+                float radSq = light.Radius * light.Radius;
+                if (distSq >= radSq) continue;
+
+                float dist = MathF.Sqrt(distSq);
+                float falloff = 1f - (dist / light.Radius);
+                falloff *= falloff;
+
+                r += light.Color.R * falloff;
+                g += light.Color.G * falloff;
+                b += light.Color.B * falloff;
+            }
+        }
+
+        byte finalR = (byte)Math.Clamp((int)r, 0, 255);
+        byte finalG = (byte)Math.Clamp((int)g, 0, 255);
+        byte finalB = (byte)Math.Clamp((int)b, 0, 255);
+
+        return new Color(finalR, finalG, finalB);
     }
 
     public CameraController CameraController
@@ -91,8 +165,15 @@ public class SubnetRenderer : ScreenSurface
 
     public override void Update(TimeSpan delta)
     {
+        if (_firstFrame)
+        {
+            _firstFrame = false;
+            Render();
+        }
+        
         if (_decryptionEffect.IsActive)
         {
+            Render();
             _decryptionEffect.Update(delta, _grid, this, () => Render());
         }
         
@@ -106,7 +187,7 @@ public class SubnetRenderer : ScreenSurface
                 currentRoom.IsActive = true;
                 foreach (var (dx, dy) in currentRoom.Doors)
                 {
-                    _grid[dx, dy] = new SubnetNode(false, true, SubnetNodeType.LaserBarrier);
+                    _grid[dx, dy] = new SubnetNode(SubnetNodeType.LaserBarrier);
                 }
             }
             _turnManager.ExecuteTurn(_player,_enemies,_grid);
@@ -132,6 +213,13 @@ public class SubnetRenderer : ScreenSurface
             new Point(playerPixelX, playerPixelY), 
             mouse, pad, _grid
         );
+        
+        if (cellX != _lastCellX || cellY != _lastCellY)
+        {
+            _lastCellX = cellX;
+            _lastCellY = cellY;
+            Render();
+        }
 
         Surface.ViewPosition = new Point(cellX, cellY);
         Position = new Point(-subPixelX, -subPixelY);
@@ -216,35 +304,29 @@ public class SubnetRenderer : ScreenSurface
 
     public void Render()
     {
-        int startX = Math.Max(2, _player.x - FovRadius - 4);
-        int endX = Math.Min(_grid.Width - 3, _player.x + FovRadius + 4);
-
-        int startY = Math.Max(0, _player.y - FovRadius - 4);
-        int endY = Math.Min(_grid.Height - 1, _player.y + FovRadius + 4);
+        int margin = 8;
+        int startX = Math.Max(0, Surface.ViewPosition.X - margin);
+        int endX = Math.Min(_grid.Width, Surface.ViewPosition.X + Surface.ViewWidth + margin);
+        int startY = Math.Max(0, Surface.ViewPosition.Y - margin);
+        int endY = Math.Min(_grid.Height, Surface.ViewPosition.Y + Surface.ViewHeight + margin);
         
-        var currentRoom = _rooms.FirstOrDefault(r => r.Contains(_player.x, _player.y));
-        
-        bool playerInClearedRoom = currentRoom != null && currentRoom.IsCleared;
         
         for (int x = startX; x < endX; x++)
         {
             for (int y = startY; y < endY; y++)
             {
                 var node = _grid[x, y];
-                
-                bool isRoomLit = false;
-                if (playerInClearedRoom)
-                {
-                    isRoomLit = node.Type == SubnetNodeType.Floor
-                        ? currentRoom!.Contains(x, y)
-                        : IsWallNearRoom(currentRoom!, x, y);
-                }
  
-                if ((!node.IsDiscovered && !isRoomLit) || node.Type == SubnetNodeType.Void)
+                Color lightColor = GetLightColor(x, y);
+                bool isLit = (lightColor.R + lightColor.G + lightColor.B) > 10;
+                
+                if ((!node.IsDiscovered && !isLit) || node.Type == SubnetNodeType.Void)
                 {
                     Surface.SetGlyph(x, y, ' ', Color.White, Color.Black);
                     continue;
                 }
+
+                if (isLit) node.IsDiscovered = true;
                 
                 bool isHorizontal = _grid[x - 1, y].Type != SubnetNodeType.Floor || _grid[x + 1, y].Type != SubnetNodeType.Floor;
                 
@@ -256,28 +338,24 @@ public class SubnetRenderer : ScreenSurface
                     SubnetNodeType.LaserBarrier => isHorizontal ? '═' : '║',
                     _ => ' '
                 };
-
-                float intensity = node.IsSight ? GetIntensity(x, y) : 0f;
+                
                 Color foreground;
+                
                 if (node.Type == SubnetNodeType.LaserBarrier)
                 {
                     foreground = Color.Crimson;;
                 }
                 else if (node.Type == SubnetNodeType.Floor)
                 {
-                    foreground = isRoomLit ? Theme.Current.FloorLit : node.IsSight
-                        ? Color.Lerp(Theme.Current.FloorFog, Theme.Current.FloorLit, intensity)
-                        : Theme.Current.FloorFog;
+                    foreground = isLit ? lightColor : Theme.Current.FloorFog;
                 }
                 else
                 {
-                    Color bright = node.Type == SubnetNodeType.WallFront 
-                        ? Theme.Current.WallFront 
-                        : Theme.Current.WallRoof;
-
-                    foreground = isRoomLit ? bright : node.IsSight 
-                        ? Color.Lerp(Theme.Current.WallDim, bright, intensity) 
-                        : Theme.Current.WallDim;
+                    float brightness = Math.Clamp((lightColor.R + lightColor.G + lightColor.B) / (255f * 1.5f), 0f, 1f);
+                    Color baseWall = node.Type == SubnetNodeType.WallFront ? Theme.Current.WallFront : Theme.Current.WallRoof;
+                    Color targetWall = Color.Lerp(baseWall, lightColor, 0.35f);
+                    foreground = Color.Lerp(Theme.Current.WallDim, targetWall, brightness);
+                    
                 }
 
                 Surface.SetGlyph(x, y, glyph, foreground, Color.Black);
