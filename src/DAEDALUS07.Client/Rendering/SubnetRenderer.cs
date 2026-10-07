@@ -131,6 +131,23 @@ public class SubnetRenderer : ScreenSurface
 
         foreach (var room in _rooms)
         {
+            
+            if (!room.IsActive && !room.IsCleared) continue;
+
+            
+            if (!room.Contains(x, y))
+            {
+              
+                if (_grid[x, y].Type == SubnetNodeType.Floor) continue;
+
+                
+                bool isNearWall = room.Segments.Any(s => 
+                    x >= s.Left - 2 && x <= s.Right + 2 && 
+                    y >= s.Top - 3 && y <= s.Bottom + 1);
+
+                if (!isNearWall) continue;
+            }
+
             foreach (var light in room.Lights)
             {
                 if (!light.IsActive) continue;
@@ -336,6 +353,9 @@ public class SubnetRenderer : ScreenSurface
                     SubnetNodeType.WallFront => '#',
                     SubnetNodeType.WallRoof => '#',
                     SubnetNodeType.LaserBarrier => isHorizontal ? '═' : '║',
+                    SubnetNodeType.CatwalkFloor => '≡',
+                    SubnetNodeType.Stairs => '=',
+                    SubnetNodeType.LowCover => '░',
                     _ => ' '
                 };
                 
@@ -345,9 +365,17 @@ public class SubnetRenderer : ScreenSurface
                 {
                     foreground = Color.Crimson;;
                 }
-                else if (node.Type == SubnetNodeType.Floor)
+                else if (node.Type is SubnetNodeType.Floor or SubnetNodeType.CatwalkFloor)
                 {
                     foreground = isLit ? lightColor : Theme.Current.FloorFog;
+                }
+                else if (node.Type == SubnetNodeType.LowCover)
+                {
+                    foreground = isLit ? Color.Orange : Color.DarkOrange * 0.4f;
+                }
+                else if (node.Type == SubnetNodeType.Stairs)
+                {
+                    foreground = isLit ? Color.Gold : Color.DarkGoldenrod * 0.4f;
                 }
                 else
                 {

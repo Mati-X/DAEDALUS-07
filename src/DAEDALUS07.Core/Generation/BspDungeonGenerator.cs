@@ -42,18 +42,22 @@ public class BspDungeonGenerator
         CreateVerticalTunnel(grid, start.y, end.y, end.x);
     }
 
-    private static (int x, int y) GetRandomPointInRoom(Room room, Random random)
-    {
-        if (room.CircleBounds.HasValue)
+        private static (int x, int y) GetRandomPointInRoom(Room room, Random random)
         {
-            var circle = room.CircleBounds.Value;
-            return (circle.CenterX, circle.CenterY);
-        }
+            if (room.CircleBounds.HasValue)
+            {
+                var circle = room.CircleBounds.Value;
+                return (circle.CenterX, circle.CenterY);
+            }
 
-        int rx = random.Next(room.Bounds.Left + 1, room.Bounds.Right - 2);
-        int ry = random.Next(room.Bounds.Top + 1, room.Bounds.Bottom - 2);
-        return (rx - (rx % 2), ry - (ry % 2));
-    }
+            var seg = room.Segments.Count > 0 
+                ? room.Segments[random.Next(room.Segments.Count)] 
+                : room.Bounds;
+
+            int rx = random.Next(seg.Left + 1, Math.Max(seg.Left + 2, seg.Right - 2));
+            int ry = random.Next(seg.Top + 1, Math.Max(seg.Top + 2, seg.Bottom - 2));
+            return (rx - (rx % 2), ry - (ry % 2));
+        }
 
     private static void ConnectPoints(SubnetGrid grid, (int x, int y) point1, (int x, int y) point2, Random random)
     {
@@ -128,6 +132,28 @@ public class BspDungeonGenerator
                 }
             }
         }
+    }
+    
+    private static void BuildCatwalk(SubnetGrid grid, Rect seg)
+    {
+        int startX = seg.Left + 1;
+        int endX = seg.Right - 2;
+        int catwalkY1 = seg.Top + 1;
+        int catwalkY2 = seg.Top + 2;
+        int railingY = seg.Top + 3;
+
+        if (railingY >= seg.Bottom - 2) return;
+
+        for (int x = startX; x <= endX; x++)
+        {
+            grid[x, catwalkY1] = new SubnetNode(SubnetNodeType.CatwalkFloor);
+            grid[x, catwalkY2] = new SubnetNode(SubnetNodeType.CatwalkFloor);
+            grid[x, railingY] = new SubnetNode(SubnetNodeType.LowCover);
+        }
+
+        int midX = (startX + endX) / 2;
+        grid[midX, railingY] = new SubnetNode(SubnetNodeType.Stairs);
+        grid[midX + 1, railingY] = new SubnetNode(SubnetNodeType.Stairs);
     }
     
     public static void BakeWalls(SubnetGrid grid)
@@ -247,12 +273,46 @@ public class BspDungeonGenerator
 
                     Rect roomRect = new Rect(roomX, roomY, roomW, roomH);
                     room = new Room(roomRect, RoomType.Combat);
-                    grid.CreateRoom(room.Bounds.Width, room.Bounds.Height, room.Bounds.X, room.Bounds.Y);
+
+                    bool isLarge = roomW >= 12 && roomH >= 12;
+                    int shapeChoice = isLarge ? random.Next(3) : 0;
+
+                    if (shapeChoice == 1)
+                    {
+                        int legW = Math.Max(4, (roomW / 2) - ((roomW / 2) % 2));
+                        int legH = Math.Max(4, (roomH / 2) - ((roomH / 2) % 2));
+                        room.Segments.Clear();
+                        room.Segments.Add(new Rect(roomX, roomY, roomW, legH));
+                        room.Segments.Add(new Rect(roomX, roomY, legW, roomH));
+                    }
+                    else if (shapeChoice == 2)
+                    {
+                        int stemW = Math.Max(4, (roomW / 2) - ((roomW / 2) % 2));
+                        int capH = Math.Max(4, (roomH / 3) - ((roomH / 3) % 2));
+                        int stemX = roomX + (roomW - stemW) / 2;
+                        stemX -= stemX % 2;
+
+                        room.Segments.Clear();
+                        room.Segments.Add(new Rect(roomX, roomY, roomW, capH));
+                        room.Segments.Add(new Rect(stemX, roomY, stemW, roomH));
+                    }
+
+                    foreach (var seg in room.Segments)
+                    {
+                        grid.CreateRoom(seg.Width, seg.Height, seg.X, seg.Y);
+                    }
+
+                    if (isLarge && random.Next(2) == 0)
+                    {
+                        BuildCatwalk(grid, room.Segments[0]);
+                    }
+                    
                 }
 
                 leaf.Room = room;
                 
-                var center = room.Bounds.Center;
+                var cp = room.Segments.Count > 0 ? room.Segments[0].Center : room.Bounds.Center;
+                (int x, int y) center = (cp.x - (cp.x % 2), cp.y - (cp.y % 2));
                 grid[center.x, center.y] = new SubnetNode(SubnetNodeType.ServerTerminal);
 
                 var mainLight = new PointLight(center.x, center.y, radius: 9, Color.Cyan)

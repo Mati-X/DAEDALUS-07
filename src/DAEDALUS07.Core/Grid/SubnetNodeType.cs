@@ -12,5 +12,7 @@ public enum SubnetNodeType : byte
     LaserBarrier,
     Pillar,
     LowCover,
-    GlassWall
+    GlassWall,
+    CatwalkFloor,
+    Stairs
 }

@@ -22,12 +22,14 @@ public class Room
     public List<(int x, int y)> Doors { get; } = [];
     public HashSet<Room> ConnectedRooms { get; } = [];
     public List<PointLight> Lights { get; } = [];
+    public List<Rect> Segments { get; } = [];
 
     public Room(Rect bounds, RoomType type)
     {
         Bounds = bounds;
         Type = type;
         IsCleared = (type == RoomType.Spawn);
+        Segments.Add(bounds);
     }
     
     public Room(Circle circle, RoomType type)
@@ -42,6 +44,6 @@ public class Room
     {
         if (CircleBounds.HasValue)
             return CircleBounds.Value.Contains(x, y);
-        return Bounds.Contains(x, y);
+        return Segments.Any(s => s.Contains(x, y));
     }
 }
