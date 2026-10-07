@@ -19,11 +19,6 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="Templates\**">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
