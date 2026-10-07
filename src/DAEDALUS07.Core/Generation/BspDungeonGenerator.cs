@@ -135,28 +135,6 @@ public class BspDungeonGenerator
         }
     }
     
-    private static void BuildCatwalk(SubnetGrid grid, Rect seg)
-    {
-        int startX = seg.Left + 1;
-        int endX = seg.Right - 2;
-        int catwalkY1 = seg.Top + 1;
-        int catwalkY2 = seg.Top + 2;
-        int railingY = seg.Top + 3;
-
-        if (railingY >= seg.Bottom - 2) return;
-
-        for (int x = startX; x <= endX; x++)
-        {
-            grid[x, catwalkY1] = new SubnetNode(SubnetNodeType.CatwalkFloor);
-            grid[x, catwalkY2] = new SubnetNode(SubnetNodeType.CatwalkFloor);
-            grid[x, railingY] = new SubnetNode(SubnetNodeType.LowCover);
-        }
-
-        int midX = (startX + endX) / 2;
-        grid[midX, railingY] = new SubnetNode(SubnetNodeType.Stairs);
-        grid[midX + 1, railingY] = new SubnetNode(SubnetNodeType.Stairs);
-    }
-
     private static bool isInteriorTile(SubnetNodeType nodeType)
     {
         return nodeType is SubnetNodeType.Floor 
@@ -215,55 +193,50 @@ public class BspDungeonGenerator
         }
     }
     
-    private static void StampTemplate(SubnetGrid grid, Room room, RoomTemplate template, int startX, int startY)
+    private static void StampTemplate(SubnetGrid grid, Room room, MacroRoomTemplate template, int startX, int startY, Random random)
     {
-        var layer0 = template.Layers[0];
-        for (int y = 0; y < template.Height; y++)
+        for (int l = 0; l < template.MacroLayers.Length; l++)
         {
-            for (int x = 0; x < template.Width; x++)
+            for (int mr = 0; mr < template.MacroRows; mr++)
             {
-                char ch = layer0[y][x];
-                int gx = startX + x, gy = startY + y;
-
-                switch (ch)
+                for (int mc = 0; mc < template.MacroCols; mc++)
                 {
-                    case '.':
-                        grid[gx, gy] = new SubnetNode(SubnetNodeType.Floor);
-                        break;
-                    case 'O':
-                        grid[gx, gy] = new SubnetNode(SubnetNodeType.Pillar);
-                        break;
-                    case '░':
-                        grid[gx, gy] = new SubnetNode(SubnetNodeType.LowCover);
-                        break;
-                    case 'T':
-                        grid[gx, gy] = new SubnetNode(SubnetNodeType.ServerTerminal);
-                        break;
-                }
-            }
-        }
+                    char moduleCode = template.GetModuleCode(l, mr, mc);
+                    if (moduleCode == ' ') continue;
 
-        for (int l = 1; l < template.Layers.Length; l++)
-        {
-            var layer = template.Layers[l];
-            for (int y = 0; y < template.Height; y++)
-            {
-                for (int x = 0; x < template.Width; x++)
-                {
-                    char ch = layer[y][x];
-                    int gx = startX + x, gy = startY + y;
+                    string[] variant = ModuleLibrary.GetRandomVariant(moduleCode, random);
+                    int baseX = startX + (mc * ModuleLibrary.ModuleSize);
+                    int baseY = startY + (mr * ModuleLibrary.ModuleSize);
 
-                    switch (ch)
+                    for (int vy = 0; vy < ModuleLibrary.ModuleSize; vy++)
                     {
-                        case '≡':
-                            grid[gx, gy] = new SubnetNode(SubnetNodeType.CatwalkFloor);
-                            break;
-                        case '=':
-                            grid[gx, gy] = new SubnetNode(SubnetNodeType.Stairs);
-                            break;
-                        case '░':
-                            grid[gx, gy] = new SubnetNode(SubnetNodeType.LowCover);
-                            break;
+                        for (int vx = 0; vx < ModuleLibrary.ModuleSize; vx++)
+                        {
+                            char ch = variant[vy][vx];
+                            int gx = baseX + vx, gy = baseY + vy;
+
+                            switch (ch)
+                            {
+                                case '.':
+                                    grid[gx, gy] = new SubnetNode(SubnetNodeType.Floor);
+                                    break;
+                                case 'O':
+                                    grid[gx, gy] = new SubnetNode(SubnetNodeType.Pillar);
+                                    break;
+                                case '░':
+                                    grid[gx, gy] = new SubnetNode(SubnetNodeType.LowCover);
+                                    break;
+                                case 'T':
+                                    grid[gx, gy] = new SubnetNode(SubnetNodeType.ServerTerminal);
+                                    break;
+                                case '≡':
+                                    grid[gx, gy] = new SubnetNode(SubnetNodeType.CatwalkFloor);
+                                    break;
+                                case '=':
+                                    grid[gx, gy] = new SubnetNode(SubnetNodeType.Stairs);
+                                    break;
+                            }
+                        }
                     }
                 }
             }
@@ -310,7 +283,7 @@ public class BspDungeonGenerator
                 roomX -= roomX % 2; roomY -= roomY % 2;
 
                 room = new Room(new Rect(roomX, roomY, template.Width, template.Height), roomType);
-                StampTemplate(grid, room, template, roomX, roomY);
+                StampTemplate(grid, room, template, roomX, roomY, random);
 
                 leaf.Room = room;
                 
