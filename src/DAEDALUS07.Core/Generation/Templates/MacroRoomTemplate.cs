@@ -20,7 +20,6 @@ public class MacroRoomTemplate
         Type = type;
         MacroLayers = macroLayers;
 
-        // Liczba kolumn: jeśli string ma spacje (np. "F F F"), dzielimy po spacjach, inaczej bierzemy długość stringa
         if (macroLayers.Length > 0 && macroLayers[0].Length > 0)
         {
             string sampleRow = macroLayers[0][0];
