@@ -9,8 +9,7 @@ public static class TemplateLibrary
         RoomType.Spawn,
         macroLayers: [
             [
-                "F F",
-                "F T"
+                "T"
             ]
         ]
     );
@@ -20,14 +19,12 @@ public static class TemplateLibrary
         RoomType.Combat,
         macroLayers: [
             [
-                "F F F F F",
-                "F D T D F",
-                "S F F F L"
+                "F F F",
+                "S D L"
             ],
             [
-                "C C C C C",
-                "         ",
-                "S        "
+                "C C C",
+                "S    "
             ]
         ]
     );
@@ -37,9 +34,8 @@ public static class TemplateLibrary
         RoomType.Combat,
         macroLayers: [
             [
-                "D F F D",
-                "F T F F",
-                "D F F D"
+                "D D",
+                "F T"
             ]
         ]
     );
@@ -49,10 +45,8 @@ public static class TemplateLibrary
         RoomType.Combat,
         macroLayers: [
             [
-                "D F F F D",
-                "F L T L F",
-                "F F F F F",
-                "D F F F D"
+                "D T D",
+                "F L F"
             ]
         ]
     );

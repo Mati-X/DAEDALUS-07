@@ -27,7 +27,7 @@
 
         int padding = 100;
         SubnetGrid grid = new(280 + padding * 2, 180 + padding * 2);
-        var (rooms, spawn, enemies) = BspDungeonGenerator.Generate(grid, minSize: 90, maxSplits: 2, new Random(), padding);
+        var (rooms, spawn, enemies) = BspDungeonGenerator.Generate(grid, minSize: 65, maxSplits: 3, new Random(), padding);
 
         Entity player = new(spawn.x, spawn.y, "THESEUS")
             { Size = 2 };
