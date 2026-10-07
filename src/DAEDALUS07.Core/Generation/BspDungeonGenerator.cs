@@ -1,4 +1,5 @@
 using DAEDALUS07.Core.Entities;
+using DAEDALUS07.Core.Generation.Templates;
 using DAEDALUS07.Core.Grid;
 using DAEDALUS07.Core.Primitives;
 using SadRogue.Primitives;
@@ -155,6 +156,16 @@ public class BspDungeonGenerator
         grid[midX, railingY] = new SubnetNode(SubnetNodeType.Stairs);
         grid[midX + 1, railingY] = new SubnetNode(SubnetNodeType.Stairs);
     }
+
+    private static bool isInteriorTile(SubnetNodeType nodeType)
+    {
+        return nodeType is SubnetNodeType.Floor 
+            or SubnetNodeType.CatwalkFloor 
+            or SubnetNodeType.Stairs 
+            or SubnetNodeType.LowCover 
+            or SubnetNodeType.Pillar 
+            or SubnetNodeType.ServerTerminal;
+    }
     
     public static void BakeWalls(SubnetGrid grid)
     {
@@ -163,7 +174,14 @@ public class BspDungeonGenerator
         {
             for (int y = 0; y < grid.Height; y++)
             {
-                if (grid[x, y].Type == SubnetNodeType.Floor)
+                bool isInterior = grid[x, y].Type is SubnetNodeType.Floor 
+                    or SubnetNodeType.CatwalkFloor 
+                    or SubnetNodeType.Stairs 
+                    or SubnetNodeType.LowCover 
+                    or SubnetNodeType.Pillar 
+                    or SubnetNodeType.ServerTerminal;
+
+                if (isInterior)
                     floors.Add((x, y));
                 else
                     grid[x, y] = new SubnetNode(SubnetNodeType.Void);
@@ -177,7 +195,7 @@ public class BspDungeonGenerator
                 for (int dy = -3; dy <= 1; dy++)
                 {
                     int wx = fx + dx, wy = fy + dy;
-                    if (!grid.IsInBounds(wx, wy) || grid[wx, wy].Type == SubnetNodeType.Floor) continue;
+                    if (!grid.IsInBounds(wx, wy) || isInteriorTile(grid[wx, wy].Type)) continue;
                     grid[wx, wy] = new SubnetNode(SubnetNodeType.WallRoof);
                 }
             }
@@ -190,8 +208,63 @@ public class BspDungeonGenerator
                 for (int dy = -2; dy <= 0; dy++)
                 {
                     int wx = fx + dx, wy = fy + dy;
-                    if (!grid.IsInBounds(wx, wy) || grid[wx, wy].Type == SubnetNodeType.Floor) continue;
+                    if (!grid.IsInBounds(wx, wy) || isInteriorTile(grid[wx, wy].Type)) continue;
                     grid[wx, wy] = new SubnetNode(SubnetNodeType.WallFront);
+                }
+            }
+        }
+    }
+    
+    private static void StampTemplate(SubnetGrid grid, Room room, RoomTemplate template, int startX, int startY)
+    {
+        var layer0 = template.Layers[0];
+        for (int y = 0; y < template.Height; y++)
+        {
+            for (int x = 0; x < template.Width; x++)
+            {
+                char ch = layer0[y][x];
+                int gx = startX + x, gy = startY + y;
+
+                switch (ch)
+                {
+                    case '.':
+                        grid[gx, gy] = new SubnetNode(SubnetNodeType.Floor);
+                        break;
+                    case 'O':
+                        grid[gx, gy] = new SubnetNode(SubnetNodeType.Pillar);
+                        break;
+                    case '░':
+                        grid[gx, gy] = new SubnetNode(SubnetNodeType.LowCover);
+                        break;
+                    case 'T':
+                        grid[gx, gy] = new SubnetNode(SubnetNodeType.ServerTerminal);
+                        break;
+                }
+            }
+        }
+
+        for (int l = 1; l < template.Layers.Length; l++)
+        {
+            var layer = template.Layers[l];
+            for (int y = 0; y < template.Height; y++)
+            {
+                for (int x = 0; x < template.Width; x++)
+                {
+                    char ch = layer[y][x];
+                    int gx = startX + x, gy = startY + y;
+
+                    switch (ch)
+                    {
+                        case '≡':
+                            grid[gx, gy] = new SubnetNode(SubnetNodeType.CatwalkFloor);
+                            break;
+                        case '=':
+                            grid[gx, gy] = new SubnetNode(SubnetNodeType.Stairs);
+                            break;
+                        case '░':
+                            grid[gx, gy] = new SubnetNode(SubnetNodeType.LowCover);
+                            break;
+                    }
                 }
             }
         }
@@ -224,90 +297,20 @@ public class BspDungeonGenerator
                 var leaf = leaves[i];
                 Room room;
 
-                if (i == 0)
-                {
-                    int roomW = 8, roomH = 8;
-                    int roomX = leaf.Bounds.X + (leaf.Bounds.Width - roomW) / 2;
-                    int roomY = leaf.Bounds.Y + (leaf.Bounds.Height - roomH) / 2;
-                    roomX -= roomX % 2; roomY -= roomY % 2;
+                RoomType roomType = (i == 0) ? RoomType.Spawn 
+                    : (i == leaves.Count - 1 ? RoomType.BossVault : RoomType.Combat);
 
-                    room = new Room(new Rect(roomX, roomY, roomW, roomH), RoomType.Spawn);
-                    grid.CreateRoom(room.Bounds.Width, room.Bounds.Height, room.Bounds.X, room.Bounds.Y);
-                }
-                else if (i == leaves.Count - 1)
-                {
-                    int radius = Math.Min(leaf.Bounds.Width, leaf.Bounds.Height) / 3;
-                    radius -= radius % 2;
-                    var c = leaf.Bounds.Center;
-                    Circle circle = new Circle(c.x - (c.x % 2), c.y - (c.y % 2), radius);
+                var template = TemplateLibrary.GetRandomTemplate(roomType, 
+                    leaf.Bounds.Width - roomMargin * 2, 
+                    leaf.Bounds.Height - roomMargin * 2, 
+                    random);
 
-                    room = new Room(circle, RoomType.BossVault);
+                int roomX = leaf.Bounds.X + (leaf.Bounds.Width - template.Width) / 2;
+                int roomY = leaf.Bounds.Y + (leaf.Bounds.Height - template.Height) / 2;
+                roomX -= roomX % 2; roomY -= roomY % 2;
 
-                    for (int x = circle.CenterX - circle.Radius; x <= circle.CenterX + circle.Radius; x++)
-                    for (int y = circle.CenterY - circle.Radius; y <= circle.CenterY + circle.Radius; y++)
-                        if (circle.Contains(x, y))
-                            grid[x, y] = new SubnetNode(SubnetNodeType.Floor);
-                }
-                else
-                {
-                    int minW = Math.Min(minSize / 2, leaf.Bounds.Width - 4);
-                    int maxW = Math.Max(minW, leaf.Bounds.Width - roomMargin * 2);
-                    int roomW = (minW >= maxW) ? minW : random.Next(minW, maxW);
-                    roomW -= roomW % 2;
-
-                    int minH = Math.Min(minSize / 2, leaf.Bounds.Height - 4);
-                    int maxH = Math.Max(minH, leaf.Bounds.Height - roomMargin * 2);
-                    int roomH = (minH >= maxH) ? minH : random.Next(minH, maxH);
-                    roomH -= roomH % 2;
-
-                    int minX = leaf.Bounds.X + roomMargin;
-                    int maxX = Math.Max(minX, leaf.Bounds.Right - roomW - roomMargin);
-                    int roomX = (minX >= maxX) ? minX : random.Next(minX, maxX);
-                    roomX -= roomX % 2;
-
-                    int minY = leaf.Bounds.Y + roomMargin;
-                    int maxY = Math.Max(minY, leaf.Bounds.Bottom - roomH - roomMargin);
-                    int roomY = (minY >= maxY) ? minY : random.Next(minY, maxY);
-                    roomY -= roomY % 2;
-
-
-                    Rect roomRect = new Rect(roomX, roomY, roomW, roomH);
-                    room = new Room(roomRect, RoomType.Combat);
-
-                    bool isLarge = roomW >= 12 && roomH >= 12;
-                    int shapeChoice = isLarge ? random.Next(3) : 0;
-
-                    if (shapeChoice == 1)
-                    {
-                        int legW = Math.Max(4, (roomW / 2) - ((roomW / 2) % 2));
-                        int legH = Math.Max(4, (roomH / 2) - ((roomH / 2) % 2));
-                        room.Segments.Clear();
-                        room.Segments.Add(new Rect(roomX, roomY, roomW, legH));
-                        room.Segments.Add(new Rect(roomX, roomY, legW, roomH));
-                    }
-                    else if (shapeChoice == 2)
-                    {
-                        int stemW = Math.Max(4, (roomW / 2) - ((roomW / 2) % 2));
-                        int capH = Math.Max(4, (roomH / 3) - ((roomH / 3) % 2));
-                        int stemX = roomX + (roomW - stemW) / 2;
-                        stemX -= stemX % 2;
-
-                        room.Segments.Clear();
-                        room.Segments.Add(new Rect(roomX, roomY, roomW, capH));
-                        room.Segments.Add(new Rect(stemX, roomY, stemW, roomH));
-                    }
-
-                    foreach (var seg in room.Segments)
-                    {
-                        grid.CreateRoom(seg.Width, seg.Height, seg.X, seg.Y);
-                    }
-
-                    if (isLarge && random.Next(2) == 0)
-                    {
-                        BuildCatwalk(grid, room.Segments[0]);
-                    }
-                    
-                }
+                room = new Room(new Rect(roomX, roomY, template.Width, template.Height), roomType);
+                StampTemplate(grid, room, template, roomX, roomY);
 
                 leaf.Room = room;
                 
