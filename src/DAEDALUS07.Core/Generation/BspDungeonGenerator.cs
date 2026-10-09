@@ -265,6 +265,7 @@ public class BspDungeonGenerator
             List<Room> rooms = [];   
             
             var leaves = nodes.Where(n => n.IsLeaf).ToList();
+            
             for (int i = 0; i < leaves.Count; i++)
             {
                 var leaf = leaves[i];

@@ -345,17 +345,19 @@ public class SubnetRenderer : ScreenSurface
 
                 if (isLit) node.IsDiscovered = true;
                 
-                bool isHorizontal = _grid[x - 1, y].Type != SubnetNodeType.Floor || _grid[x + 1, y].Type != SubnetNodeType.Floor;
                 
                 int glyph = node.Type switch
                 {
                     SubnetNodeType.Floor => '.',
-                    SubnetNodeType.WallFront => '#',
-                    SubnetNodeType.WallRoof => '#',
-                    SubnetNodeType.LaserBarrier => isHorizontal ? '═' : '║',
                     SubnetNodeType.CatwalkFloor => '≡',
                     SubnetNodeType.Stairs => '=',
-                    SubnetNodeType.LowCover => '░',
+                    SubnetNodeType.LowCover => 220,
+                    SubnetNodeType.Pillar => 219,
+                    SubnetNodeType.ServerTerminal => 234,
+                    SubnetNodeType.WallFront => '#',
+                    SubnetNodeType.WallRoof => '#',
+                    SubnetNodeType.LaserBarrier => 186,
+                    
                     _ => ' '
                 };
                 

@@ -9,7 +9,7 @@ public static class TemplateLibrary
         RoomType.Spawn,
         macroLayers: [
             [
-                "T"
+                "X"
             ]
         ]
     );
