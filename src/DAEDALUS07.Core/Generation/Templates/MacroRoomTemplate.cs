@@ -23,9 +23,7 @@ public class MacroRoomTemplate
         if (macroLayers.Length > 0 && macroLayers[0].Length > 0)
         {
             string sampleRow = macroLayers[0][0];
-            MacroCols = sampleRow.Contains(' ') 
-                ? sampleRow.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length 
-                : sampleRow.Length;
+            MacroCols = sampleRow.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
         }
         else
         {
@@ -33,18 +31,14 @@ public class MacroRoomTemplate
         }
     }
 
-    public char GetModuleCode(int layer, int macroRow, int macroCol)
+    public string GetModuleCode(int layer, int macroRow, int macroCol)
     {
         if (layer >= MacroLayers.Length || macroRow >= MacroLayers[layer].Length)
-            return ' ';
+            return "--";
 
         string rowStr = MacroLayers[layer][macroRow];
-        if (rowStr.Contains(' '))
-        {
-            string[] tokens = rowStr.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            return macroCol < tokens.Length ? tokens[macroCol][0] : ' ';
-        }
+        string[] tokens = rowStr.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-        return macroCol < rowStr.Length ? rowStr[macroCol] : ' ';
+        return macroCol < tokens.Length ? tokens[macroCol] : "--";
     }
 }
