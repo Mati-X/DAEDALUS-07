@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\DAEDALUS07.Core\DAEDALUS07.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
+    <PackageReference Include="SadConsole.Host.MonoGame" Version="10.10.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\DAEDALUS07.Client\Fonts\**" CopyToOutputDirectory="PreserveNewest" Link="Fonts\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="..\DAEDALUS07.Client\Themes\**" CopyToOutputDirectory="PreserveNewest" Link="Themes\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
