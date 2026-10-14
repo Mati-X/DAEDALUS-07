@@ -349,7 +349,7 @@ public class SubnetRenderer : ScreenSurface
                 int glyph = node.Type switch
                 {
                     SubnetNodeType.Floor => '.',
-                    SubnetNodeType.CatwalkFloor => '≡',
+                    SubnetNodeType.CatwalkFloor => 240,
                     SubnetNodeType.Stairs => '=',
                     SubnetNodeType.LowCover => 220,
                     SubnetNodeType.Pillar => 219,
@@ -388,6 +388,13 @@ public class SubnetRenderer : ScreenSurface
                     
                 }
 
+                if (node.Elevation < _player.Elevation)
+                {
+                    int diff = _player.Elevation - node.Elevation;
+                    float depthFactor = MathF.Pow(0.45f, diff);
+                    foreground = foreground * depthFactor;
+                }
+                
                 Surface.SetGlyph(x, y, glyph, foreground, Color.Black);
             }
         }
