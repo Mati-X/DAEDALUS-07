@@ -11,6 +11,7 @@ public class Entity
     public int MaxIntegrity { get; set; } 
     public int Integrity { get; set; }
     public int Size { get; set; } = 1;
+    public byte Elevation { get; set; } = 0;
     public bool IsAlive => Integrity > 0;
 
     public bool TryMove(int dx, int dy, SubnetGrid grid)
@@ -18,17 +19,36 @@ public class Entity
         int targetX = x + dx;
         int targetY = y + dy;
 
+        int currentFeetY = y + (Size - 1);
+        var currentNode = grid[x, currentFeetY];
         int feetY = targetY + (Size - 1);
 
         for (int cx = 0; cx < Size; cx++)
         {
             int checkX = targetX + cx;
-            if (!grid.IsInBounds(checkX, feetY) || !grid[checkX, feetY].IsPassable)
+            if (!grid.IsInBounds(checkX, feetY))
+                return false;
+
+            var targetNode = grid[checkX, feetY];
+            if (!targetNode.IsPassable)
+                return false;
+
+            bool isStairsTransition = (targetNode.Type == SubnetNodeType.Stairs) || 
+                                      (currentNode.Type == SubnetNodeType.Stairs);
+
+            if (!isStairsTransition && targetNode.Elevation != this.Elevation)
                 return false;
         }
 
         x = targetX;
         y = targetY;
+
+        var landedNode = grid[targetX, feetY];
+        if (landedNode.Type != SubnetNodeType.Stairs)
+        {
+            Elevation = landedNode.Elevation;
+        }
+
         return true;
     }
     

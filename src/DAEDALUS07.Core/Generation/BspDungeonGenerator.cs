@@ -201,10 +201,10 @@ public class BspDungeonGenerator
             {
                 for (int mc = 0; mc < template.MacroCols; mc++)
                 {
-                    char moduleCode = template.GetModuleCode(l, mr, mc);
-                    if (moduleCode == ' ') continue;
+                    string moduleCode = template.GetModuleCode(l, mr, mc);
+                    if (moduleCode == "--" || string.IsNullOrWhiteSpace(moduleCode)) continue;
 
-                    string[] variant = ModuleLibrary.GetRandomVariant(moduleCode, random);
+                    string[] variant = ModuleLibrary.GetVariant(moduleCode);
                     int baseX = startX + (mc * ModuleLibrary.ModuleSize);
                     int baseY = startY + (mr * ModuleLibrary.ModuleSize);
 
@@ -215,26 +215,20 @@ public class BspDungeonGenerator
                             char ch = variant[vy][vx];
                             int gx = baseX + vx, gy = baseY + vy;
 
-                            switch (ch)
+                            SubnetNodeType type = ch switch
                             {
-                                case '.':
-                                    grid[gx, gy] = new SubnetNode(SubnetNodeType.Floor);
-                                    break;
-                                case 'O':
-                                    grid[gx, gy] = new SubnetNode(SubnetNodeType.Pillar);
-                                    break;
-                                case '░':
-                                    grid[gx, gy] = new SubnetNode(SubnetNodeType.LowCover);
-                                    break;
-                                case 'T':
-                                    grid[gx, gy] = new SubnetNode(SubnetNodeType.ServerTerminal);
-                                    break;
-                                case '≡':
-                                    grid[gx, gy] = new SubnetNode(SubnetNodeType.CatwalkFloor);
-                                    break;
-                                case '=':
-                                    grid[gx, gy] = new SubnetNode(SubnetNodeType.Stairs);
-                                    break;
+                                '.' => SubnetNodeType.Floor,
+                                'O' => SubnetNodeType.Pillar,
+                                '░' => SubnetNodeType.LowCover,
+                                'T' => SubnetNodeType.ServerTerminal,
+                                '≡' => SubnetNodeType.CatwalkFloor,
+                                '=' => SubnetNodeType.Stairs,
+                                _   => SubnetNodeType.Void
+                            };
+
+                            if (type != SubnetNodeType.Void)
+                            {
+                                grid[gx, gy] = new SubnetNode(type, (byte)l);
                             }
                         }
                     }
@@ -316,14 +310,10 @@ public class BspDungeonGenerator
             }
            
             
-            List<Enemy> enemies = [];                                                                                                                                                                                                 
+            List<Enemy> enemies = [];
             foreach (var room in rooms.Where(r => r.Type != RoomType.Spawn))
             {
                 var (ex, ey) = GetRandomPointInRoom(room, random);
-                // var enemy = new Enemy(ex, ey, "MINOS_DAEMON", 'D', 30, 12, 1, 2, 5);
-                //
-                // enemies.Add(enemy);
-                // room.Enemies.Add(enemy);
             }   
 
             ConnectNodes(grid, root, random);
